@@ -15,7 +15,7 @@ import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorator/current-user.decorator';
 
 @Controller('cart')
-@UseGuards(JwtAuthGuard) // protect all routes
+@UseGuards(JwtAuthGuard)
 export class CartController {
     constructor(private readonly cartService: CartService) {}
 

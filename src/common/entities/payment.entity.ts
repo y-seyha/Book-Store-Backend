@@ -1,22 +1,51 @@
-import {BaseEntity, Column, Entity, ManyToOne, PrimaryGeneratedColumn} from "typeorm";
-import {Order} from "./order.entity";
+import {
+    Column,
+    Entity,
+    ManyToOne,
+    PrimaryGeneratedColumn,
+    JoinColumn
+} from "typeorm";
+import { Order } from "./order.entity";
+import {BaseEntity} from "./base.entity";
+
+
+export enum PaymentStatus {
+    PENDING = 'pending',
+    SUCCESS = 'success',
+    FAILED = 'failed'
+}
+
+export enum PaymentMethod {
+    COD = 'cod',
+    ABA = 'aba',
+    CARD = 'card'
+}
 
 @Entity('payments')
 export class Payment extends BaseEntity {
+
     @PrimaryGeneratedColumn()
     id: number;
 
     @ManyToOne(() => Order, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'order_id' }) // ✅ important
     order: Order;
 
     @Column('decimal', { precision: 10, scale: 2 })
-    amount: number;
+    amount: string;
 
-    @Column()
-    method: string;
+    @Column({
+        type: 'enum',
+        enum: PaymentMethod
+    })
+    method: PaymentMethod;
 
-    @Column({ default: 'pending' })
-    status: string;
+    @Column({
+        type: 'enum',
+        enum: PaymentStatus,
+        default: PaymentStatus.PENDING
+    })
+    status: PaymentStatus;
 
     @Column({ type: 'timestamp', nullable: true })
     paid_at: Date;
