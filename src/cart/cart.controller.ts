@@ -46,6 +46,11 @@ export class CartController {
         );
     }
 
+    @Delete('clear')
+    async clearCart(@CurrentUser() user: any) {
+        return this.cartService.clearCart(user.id);
+    }
+
 
     @Delete('/:cartItemId')
     async removeFromCart(
@@ -56,9 +61,5 @@ export class CartController {
     }
 
 
-    @Delete('clear')
-    async clearCart(@CurrentUser() user: any) {
-        console.log('Controller hit with user:', user);
-        return this.cartService.clearCart(user.id);
-    }
+
 }

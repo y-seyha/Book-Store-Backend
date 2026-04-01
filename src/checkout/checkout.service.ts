@@ -45,9 +45,11 @@ export class CheckoutService {
                 relations: ['items', 'items.product']
             });
 
-            if (!cart || !cart.items.length) {
-                throw new BadRequestException('Cart is empty');
-            }
+            if (!cart) throw new BadRequestException('Cart is empty');
+
+            // Filter only active items
+            const activeItems = cart.items.filter(item => item.status === 'active') as CartItem[];
+            if (!activeItems.length) throw new BadRequestException('No new items to checkout');
 
             // Create order
             let total = 0;
@@ -63,10 +65,10 @@ export class CheckoutService {
 
             // Create order items & reduce stock
             const orderItems: OrderItem[] = [];
-            for (const cartItem of cart.items) {
+            for (const cartItem of activeItems) {
                 const product = cartItem.product;
 
-                if (!product) throw new NotFoundException(`Product ${cartItem.product.id} not found`);
+                if (!product) throw new NotFoundException(`Product } not found`);
                 if (product.stock < cartItem.quantity) {
                     throw new BadRequestException(`Not enough stock for product ${product.name}`);
                 }
@@ -84,6 +86,10 @@ export class CheckoutService {
                 orderItems.push(orderItem);
 
                 total += Number(product.price) * cartItem.quantity;
+
+                // Mark cart item as purchased
+                cartItem.status = 'purchased';
+                await manager.save(cartItem);
             }
 
             await manager.save(orderItems);
@@ -91,7 +97,7 @@ export class CheckoutService {
             order.total_price = total.toFixed(2);
             await manager.save(order);
 
-            //  Create payment
+            // Create payment
             const payment = manager.create(Payment, {
                 order,
                 amount: order.total_price,
@@ -99,10 +105,6 @@ export class CheckoutService {
                 status: PaymentStatus.PENDING
             });
             await manager.save(payment);
-
-            //  Clear cart
-            await manager.remove(cart.items);
-            await manager.remove(cart);
 
             return {
                 order,

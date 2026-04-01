@@ -28,7 +28,7 @@ export class Payment extends BaseEntity {
     id: number;
 
     @ManyToOne(() => Order, { onDelete: 'CASCADE' })
-    @JoinColumn({ name: 'order_id' }) // ✅ important
+    @JoinColumn({ name: 'order_id' })
     order: Order;
 
     @Column('decimal', { precision: 10, scale: 2 })

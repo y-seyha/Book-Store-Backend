@@ -58,15 +58,17 @@ export class CartService {
         if (!product) throw new NotFoundException('Product not found');
 
         // Check if item already exists in cart
-        let item = cart.items.find(i => i.product.id === productId);
+        let item = cart.items.find(
+            i => i.product.id === productId && i.status === 'active'
+        );
 
         if (item) {
-            // Update quantity
+            // Update quantity of active item
             item.quantity += quantity;
             await this.cartItemRepository.save(item);
         } else {
-            // Create a new CartItem
-            item = this.cartItemRepository.create({ cart, product, quantity });
+            // Add new cart item as active
+            item = this.cartItemRepository.create({ cart, product, quantity, status: 'active' });
             await this.cartItemRepository.save(item);
         }
 
@@ -104,20 +106,13 @@ export class CartService {
     }
 
     async clearCart(userId: string): Promise<{ message: string }> {
-        console.log('Clearing cart for user:', userId);
-
         const cart = await this.getUserCart(userId);
-        console.log('Cart found:', cart);
 
-        if (cart.items.length === 0) {
-            console.log('Cart is already empty');
-            return { message: 'Cart is already empty' };
-        }
+        const activeItems = cart.items.filter(i => i.status === 'active');
+        if (!activeItems.length) return { message: 'Cart is already empty' };
 
-        console.log('Cart items to remove:', cart.items);
-
-        await this.cartItemRepository.remove(cart.items);
-        console.log('Cart cleared successfully');
+        const idsToDelete = activeItems.map(i => i.id);
+        await this.cartItemRepository.delete(idsToDelete); // safer than remove
 
         return { message: 'Cart cleared successfully' };
     }

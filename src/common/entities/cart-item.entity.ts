@@ -21,4 +21,7 @@ export class CartItem {
 
     @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
     createdAt: Date;
+
+    @Column({ type: 'enum', enum: ['active', 'purchased'], default: 'active' })
+    status: 'active' | 'purchased';
 }
