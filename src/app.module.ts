@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from './auth/auth.module';
 import * as Joi from 'joi';
 
 @Module({
@@ -29,6 +30,8 @@ import * as Joi from 'joi';
         synchronize: true,
       }),
     }),
+
+    AuthModule,
   ],
 })
 export class AppModule {}

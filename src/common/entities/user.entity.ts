@@ -1,6 +1,4 @@
-import {
-    Entity, PrimaryGeneratedColumn, Column, OneToMany
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { BaseEntity } from './base.entity';
 import { Account } from './account.entity';
 
@@ -12,40 +10,38 @@ export class User extends BaseEntity {
     @Column({ unique: true, type: 'citext' })
     email: string;
 
-    @Column({ nullable: true })
-    first_name: string;
+    @Column({ type: 'varchar', nullable: true })
+    first_name: string | null;
 
-    @Column({ nullable: true })
-    last_name: string;
+    @Column({ type: 'varchar', nullable: true })
+    last_name: string | null;
 
-    @Column({
-        default: 'customer',
-    })
+    @Column({ type: 'varchar', default: 'customer' })
     role: 'customer' | 'admin' | 'seller';
 
-    @Column({ nullable: true })
-    phone: string;
+    @Column({ type: 'varchar', nullable: true })
+    phone: string | null;
 
-    @Column({ nullable: true })
-    avatar_url: string;
+    @Column({ type: 'varchar', nullable: true })
+    avatar_url: string | null;
 
     @Column({ default: false })
     is_verified: boolean;
 
-    @Column({ length: 6, nullable: true })
-    email_verification_otp: string;
+    @Column({ type: 'varchar', length: 6, nullable: true })
+    email_verification_otp: string | null;
 
-    @Column({ nullable: true })
-    email_verification_token: string;
-
-    @Column({ type: 'timestamptz', nullable: true })
-    email_verification_expires: Date;
-
-    @Column({ nullable: true })
-    password_reset_token: string;
+    @Column({ type: 'varchar', nullable: true })
+    email_verification_token: string | null;
 
     @Column({ type: 'timestamptz', nullable: true })
-    password_reset_expires: Date;
+    email_verification_expires: Date | null;
+
+    @Column({ type: 'varchar', nullable: true })
+    password_reset_token: string | null;
+
+    @Column({ type: 'timestamptz', nullable: true })
+    password_reset_expires: Date | null;
 
     @OneToMany(() => Account, (account) => account.user)
     accounts: Account[];
