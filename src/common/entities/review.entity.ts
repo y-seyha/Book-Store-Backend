@@ -1,9 +1,10 @@
-import {Column, Entity, ManyToOne, PrimaryGeneratedColumn} from "typeorm";
-import {Product} from "./product.entity";
-import {User} from "./user.entity";
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Product } from "./product.entity";
+import { User } from "./user.entity";
+import { BaseEntity } from "./base.entity"; // your custom base entity
 
 @Entity('reviews')
-export class Review {
+export class Review extends BaseEntity {
     @PrimaryGeneratedColumn()
     id: number;
 

@@ -6,6 +6,7 @@ import { ProductsModule } from './products/products.module';
 import { CartModule } from './cart/cart.module';
 import { OrderModule } from './order/order.module';
 import { CheckoutModule } from './checkout/checkout.module';
+import { ReviewModule } from './review/review.module';
 import * as Joi from 'joi';
 
 @Module({
@@ -40,6 +41,7 @@ import * as Joi from 'joi';
     CartModule,
     OrderModule,
     CheckoutModule,
+    ReviewModule,
   ],
 })
 export class AppModule {}
