@@ -146,4 +146,59 @@ export class AuthService {
             throw new UnauthorizedException('Invalid or expired refresh token');
         }
     }
+
+    async validateOAuthLogin(
+        profile: any,
+        accessToken: string,
+        refreshToken: string,
+        provider: string = 'google',
+    ) {
+        // Get email depending on provider
+        const email =
+            profile.emails?.[0]?.value;
+
+        if (!email) throw new BadRequestException(`${provider} account has no email`);
+
+        // Find or create user
+        let user = await this.userRepo.findOne({ where: { email } });
+        if (!user) {
+            user = this.userRepo.create({
+                email,
+                first_name: profile.name?.givenName || profile.name?.firstName || 'OAuth',
+                last_name: profile.name?.familyName || profile.name?.lastName || 'User',
+                is_verified: true,
+            });
+            await this.userRepo.save(user);
+        }
+
+        // Find account by provider and provider_account_id (safe)
+        let account = await this.accountRepo.findOne({
+            where: { provider, provider_account_id: email },
+            relations: ['user'],
+        });
+
+        if (!account) {
+            // Create new account
+            account = this.accountRepo.create({
+                user,
+                provider,
+                provider_account_id: email,
+                access_token: accessToken,
+                refresh_token: refreshToken,
+            });
+            await this.accountRepo.save(account);
+        } else {
+            // Update tokens if changed
+            account.access_token = accessToken;
+            account.refresh_token = refreshToken;
+            await this.accountRepo.save(account);
+        }
+
+        // Generate JWT tokens
+        const payload = { userId: user.id, role: user.role };
+        const accessTokenJwt = this.jwtService.sign(payload, { expiresIn: '15m' });
+        const refreshTokenJwt = this.jwtService.sign(payload, { expiresIn: '7d' });
+
+        return { user, accessToken: accessTokenJwt, refreshToken: refreshTokenJwt };
+    }
 }

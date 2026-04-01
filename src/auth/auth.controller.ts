@@ -1,9 +1,10 @@
-import {Body, Controller, Post, Req, Res} from '@nestjs/common';
+import {Body, Controller, Get, Post, Req, Res, UseGuards} from '@nestjs/common';
 import {AuthService} from "./auth.service";
 import {RegisterDTO} from "./dto/register.dto";
 import {VerifyEmailDTO} from "./dto/verify-email.dto";
 import {LoginDto} from "./dto/login.dto";
 import type { Request, Response } from 'express';
+import {AuthGuard} from "@nestjs/passport";
 
 @Controller('auth')
 export class AuthController {
@@ -33,4 +34,54 @@ export class AuthController {
     refresh(@Req() req: Request) {
         return this.authService.refreshToken(req);
     }
+
+    //OAuth
+    @Get('google')
+    @UseGuards(AuthGuard('google'))
+    async googleAuth() {
+        // Passport will redirect to Google automatically
+    }
+
+    @Get('google/callback')
+    @UseGuards(AuthGuard('google'))
+    async googleCallback(@Req() req: Request, @Res() res : Response) {
+        const {accessToken , refreshToken, user} = req.user as any;
+
+        res.cookie('access_token', accessToken, { httpOnly: true, maxAge: 15*60*1000 });
+        res.cookie('refresh_token', refreshToken, { httpOnly: true, maxAge: 7*24*60*60*1000 });
+
+        return res.json({
+            message: 'Google login successful',
+            accessToken,
+            refreshToken,
+            user,
+        });
+        // res.redirect(`${process.env.FRONTEND_URL}/oauth-success`);
+    }
+
+    // Facebook
+    @Get('facebook')
+    @UseGuards(AuthGuard('facebook'))
+    async facebookAuth() {}
+
+    @Get('facebook/callback')
+    @UseGuards(AuthGuard('facebook'))
+    async facebookCallback(@Req() req: Request, @Res() res: Response) {
+        const { accessToken, refreshToken, user } = req.user as any;
+        return res.json({ message: 'Facebook login successful', accessToken, refreshToken, user });
+    }
+
+    // GitHub
+    @Get('github')
+    @UseGuards(AuthGuard('github'))
+    async githubAuth() {}
+
+    @Get('github/callback')
+    @UseGuards(AuthGuard('github'))
+    async githubCallback(@Req() req: Request, @Res() res: Response) {
+        const { accessToken, refreshToken, user } = req.user as any;
+        return res.json({ message: 'GitHub login successful', accessToken, refreshToken, user });
+    }
+
+
 }

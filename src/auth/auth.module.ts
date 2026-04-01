@@ -7,6 +7,9 @@ import {JwtModule} from "@nestjs/jwt";
 import {TypeOrmModule} from "@nestjs/typeorm";
 import {MailerService} from "../utils/mailer.util";
 import {ConfigModule, ConfigService} from "@nestjs/config";
+import {GoogleStrategy} from "./strategies/google.strategy";
+import {FacebookOAuthStrategy} from "./strategies/facebook.strategy";
+import {GithubStrategy} from "./strategies/github.strategy";
 
 @Module({
   imports: [
@@ -21,7 +24,7 @@ import {ConfigModule, ConfigService} from "@nestjs/config";
     })
   ],
 
-  providers: [AuthService, MailerService],
+  providers: [AuthService, MailerService, GoogleStrategy, FacebookOAuthStrategy,GithubStrategy],
   controllers: [AuthController],
   exports: [AuthService],
 })
