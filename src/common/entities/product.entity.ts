@@ -1,6 +1,4 @@
-import {
-    Entity, PrimaryGeneratedColumn, Column, ManyToOne
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from './base.entity';
 import { User } from './user.entity';
 import { Category } from './category.entity';
@@ -11,7 +9,11 @@ export class Product extends BaseEntity {
     id: number;
 
     @ManyToOne(() => User, { onDelete: 'SET NULL', nullable: true })
-    user: User;
+    @JoinColumn({ name: 'user_id' })
+    user: User | null;
+
+    @Column({ nullable: true })
+    user_id: string | null; // store the userId explicitly
 
     @Column()
     name: string;
@@ -26,7 +28,11 @@ export class Product extends BaseEntity {
     stock: number;
 
     @ManyToOne(() => Category, { onDelete: 'SET NULL', nullable: true })
-    category: Category;
+    @JoinColumn({ name: 'category_id' })
+    category: Category | null;
+
+    @Column({ nullable: true })
+    category_id: number | null; // store the categoryId explicitly
 
     @Column({ nullable: true })
     image_url: string;
