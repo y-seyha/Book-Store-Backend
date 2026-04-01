@@ -10,6 +10,7 @@ import {ConfigModule, ConfigService} from "@nestjs/config";
 import {GoogleStrategy} from "./strategies/google.strategy";
 import {FacebookOAuthStrategy} from "./strategies/facebook.strategy";
 import {GithubStrategy} from "./strategies/github.strategy";
+import {JwtStrategy} from "./strategy/jwt.strategy";
 
 @Module({
   imports: [
@@ -21,10 +22,10 @@ import {GithubStrategy} from "./strategies/github.strategy";
         secret: config.get<string>('JWT_SECRET'),
         signOptions: { expiresIn: '15m' },
       }),
-    })
+    }),
   ],
 
-  providers: [AuthService, MailerService, GoogleStrategy, FacebookOAuthStrategy,GithubStrategy],
+  providers: [AuthService, MailerService, GoogleStrategy, FacebookOAuthStrategy,GithubStrategy,JwtStrategy],
   controllers: [AuthController],
   exports: [AuthService],
 })

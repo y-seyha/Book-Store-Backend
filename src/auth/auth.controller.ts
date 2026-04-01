@@ -5,10 +5,20 @@ import {VerifyEmailDTO} from "./dto/verify-email.dto";
 import {LoginDto} from "./dto/login.dto";
 import type { Request, Response } from 'express';
 import {AuthGuard} from "@nestjs/passport";
+import {JwtAuthGuard} from "./guard/jwt-auth.guard";
+import {ForgotPasswordDto} from "./dto/forgotPassword.dto";
+import {ResetpasswordDto} from "./dto/resetpassword.dto";
 
 @Controller('auth')
 export class AuthController {
     constructor(private readonly authService: AuthService) {}
+
+    @UseGuards(JwtAuthGuard)
+    @Get('me')
+    getMe(@Req() req : Request) {
+        const user = req.user;
+        return {user};
+    }
 
     @Post('register')
     async  register(@Body() registerDto : RegisterDTO) {
@@ -81,6 +91,16 @@ export class AuthController {
     async githubCallback(@Req() req: Request, @Res() res: Response) {
         const { accessToken, refreshToken, user } = req.user as any;
         return res.json({ message: 'GitHub login successful', accessToken, refreshToken, user });
+    }
+
+    @Post('forgot-password')
+    async  forgotPassword(@Body() forgotPasswordDto : ForgotPasswordDto){
+        return this.authService.forgotPassword(forgotPasswordDto);
+    }
+
+    @Post('reset-password')
+    async resetPassword(@Body() resetPasswordDto : ResetpasswordDto) {
+        return this.authService.resetPassword(resetPasswordDto);
     }
 
 

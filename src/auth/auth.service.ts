@@ -12,6 +12,8 @@ import {LoginDto} from "./dto/login.dto";
 import {MailerService} from "../utils/mailer.util";
 // import { Response } from '@nestjs/common';
 import { Request, Response } from 'express';
+import {ForgotPasswordDto} from "./dto/forgotPassword.dto";
+import {ResetpasswordDto} from "./dto/resetpassword.dto";
 
 @Injectable()
 export class AuthService {
@@ -65,7 +67,6 @@ export class AuthService {
 
         return { message: 'Registration successful. Please check your email for verification.' };
     }
-
 
     async  verifyEmail(verifyEmailDto : VerifyEmailDTO){
         const user = await this.userRepo.findOne({
@@ -201,4 +202,61 @@ export class AuthService {
 
         return { user, accessToken: accessTokenJwt, refreshToken: refreshTokenJwt };
     }
+
+    async forgotPassword(forgotPasswordDto : ForgotPasswordDto) {
+        const {email} = forgotPasswordDto;
+
+        const user = await  this.userRepo.findOne({where: { email } });
+
+        if(!user)
+            return {message : 'If that email exists, a reset link has been sent to that email'}
+
+        const resetToken = crypto.randomBytes(32).toString('hex')
+        const resetExpires = new Date(Date.now() + 3600 * 1000);
+
+        user.password_reset_token = resetToken;
+        user.password_reset_expires = resetExpires;
+
+        await  this.userRepo.save(user);
+        await  this.mailer.sendPasswordResetEmail(email,resetToken)
+
+        return {message : 'We have been sent token to your email successfully.'};
+    }
+
+    async  resetPassword (resetPasswordDto : ResetpasswordDto){
+        const {token, newPassword} = resetPasswordDto;
+
+        const user = await  this.userRepo.findOne({
+            where : {
+                password_reset_token: token,
+                password_reset_expires: MoreThan(new Date()),
+            }
+        })
+
+        console.log(user?.password_reset_expires, new Date());
+
+        if(!user)
+            throw  new BadRequestException('Invalid or expired reset token')
+
+        const passwordHash = await  bcrypt.hash(newPassword, 10);
+
+        const account = await  this.accountRepo.findOne({
+            where : {provider : 'credentials', provider_account_id : user.email}
+        })
+
+        if(!account)
+            throw  new BadRequestException('Account not found')
+
+        account.password_hash = passwordHash;
+        await  this.accountRepo.save(account);
+
+        //clear reset token
+        user.password_reset_token = null;
+        user.password_reset_expires = null;
+        await  this.userRepo.save(user);
+
+        return {message : 'Password reset successfully.'};
+
+    }
+
 }
