@@ -1,0 +1,28 @@
+# Node modules (very important)
+node_modules
+npm-debug.log
+
+# Build output
+dist
+
+# Git
+.git
+.gitignore
+
+# Environment files
+.env
+.env.*
+
+# Logs
+logs
+*.log
+
+# OS files
+.DS_Store
+
+# IDE / Editor
+.vscode
+.idea
+
+# Optional
+coverage
