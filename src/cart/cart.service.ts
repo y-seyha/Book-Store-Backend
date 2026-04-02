@@ -39,14 +39,20 @@ export class CartService {
             cart = this.cartRepository.create({ user, items: [] });
             await this.cartRepository.save(cart);
 
-            // reload with relations
             cart = await this.cartRepository.findOne({
                 where: { id: cart.id },
                 relations: ['user', 'items', 'items.product'],
             })!;
+
+            if(!cart)
+                throw new NotFoundException('Cart not found');
+
         }
 
-        return cart!;
+        // fitter only show active
+        cart.items = cart.items.filter(item => item.status === 'active');
+
+        return cart;
     }
 
     async addToCart(userId: string, addToCartDto: AddToCartDto) {
