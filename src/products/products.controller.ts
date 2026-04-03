@@ -10,22 +10,26 @@ import {
     UseGuards,
     ParseIntPipe,
     Req,
+    UploadedFile,
+    UseInterceptors,
 } from '@nestjs/common';
-import type { Request } from 'express';
-import {ProductsService} from "./products.service";
-import {QueryProductDto} from "./dto/query.dto";
-import {JwtAuthGuard} from "../auth/guard/jwt-auth.guard";
-import {RoleGuard} from "../auth/guard/role-guard.guard";
-import {Roles} from "../auth/decorator/role-decorator";
-import {CreateProductDto} from "./dto/create-product.dto";
-import {CurrentUser} from "../auth/decorator/current-user.decorator";
-import {UpdateProductDto} from "./dto/update-product.dto";
-
-
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ProductsService } from './products.service';
+import { FileUploadService } from '../file-upload/file-upload.service';
+import { QueryProductDto } from './dto/query.dto';
+import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
+import { RoleGuard } from '../auth/guard/role-guard.guard';
+import { Roles } from '../auth/decorator/role-decorator';
+import { CreateProductDto } from './dto/create-product.dto';
+import { CurrentUser } from '../auth/decorator/current-user.decorator';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @Controller('products')
 export class ProductsController {
-    constructor(private readonly productsService: ProductsService) {}
+    constructor(
+        private readonly productsService: ProductsService,
+        private readonly fileUploadService: FileUploadService, // inject FileUploadService
+    ) {}
 
     @Get()
     async findAll(@Query() query: QueryProductDto) {
@@ -39,14 +43,28 @@ export class ProductsController {
 
     @Post()
     @UseGuards(JwtAuthGuard, RoleGuard)
-    @Roles('admin', 'seller','customer')
-    async create(@Body() dto: CreateProductDto, @CurrentUser() user: any) {
-        return this.productsService.create(dto, user.id);
+    @Roles('admin', 'seller', 'customer')
+    @UseInterceptors(FileInterceptor('file')) // <-- handle file upload
+    async create(
+        @UploadedFile() file: Express.Multer.File,
+        @Body() dto: CreateProductDto,
+        @CurrentUser() user: any,
+    ) {
+        let uploadedFile;
+
+        if (file) {
+            uploadedFile = await this.fileUploadService.uploadFile(
+                file,
+                dto.description, // optional description field in CreateProductDto
+                user,
+            );
+        }
+
+        return this.productsService.create(dto, user.id, uploadedFile);
     }
 
-
     @UseGuards(JwtAuthGuard, RoleGuard)
-    @Roles('admin', 'seller','customer')
+    @Roles('admin', 'seller', 'customer')
     @Patch(':id')
     async update(
         @Param('id', ParseIntPipe) id: number,

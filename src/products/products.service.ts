@@ -9,6 +9,8 @@ import type { Cache } from 'cache-manager';
 import {CreateProductDto} from "./dto/create-product.dto";
 import {QueryProductDto} from "./dto/query.dto";
 import {UpdateProductDto} from "./dto/update-product.dto";
+import {File} from "../common/entities/file-upload.entity"
+import type { Express } from 'express';
 
 
 @Injectable()
@@ -28,7 +30,7 @@ export class ProductsService {
     ) {
     }
 
-    async create(createDto: CreateProductDto, userId?: string) {
+    async create(createDto: CreateProductDto, userId?: string,uploadFile?: File ) {
         let category: Category | null = null;
         let user: User | null = null;
 
@@ -48,8 +50,8 @@ export class ProductsService {
             stock: createDto.stock ?? 0,
             category,
             user,
-            image_url: createDto.image_url,
-            image_public_id: createDto.image_public_id,
+            image_url: uploadFile?.url ?? createDto.image_url,
+            image_public_id: uploadFile?.publicId ??createDto.image_public_id,
         });
 
         const savedProduct = await this.productRepo.save(product);
