@@ -12,7 +12,7 @@ import {FileUploadService} from "./file-upload.service";
 import {JwtAuthGuard} from "../auth/guard/jwt-auth.guard";
 import {CurrentUser} from "../auth/decorator/current-user.decorator";
 import {User} from '../common/entities/user.entity'
-import {UploadFileDto} from "./upload-file.dto";
+import {UploadFileDto} from "./dto/upload-file.dto";
 import {FileInterceptor} from "@nestjs/platform-express";
 import {Roles} from "../auth/decorator/role-decorator";
 import {RoleGuard} from "../auth/guard/role-guard.guard";

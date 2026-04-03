@@ -44,7 +44,7 @@ export class ProductsController {
     @Post()
     @UseGuards(JwtAuthGuard, RoleGuard)
     @Roles('admin', 'seller', 'customer')
-    @UseInterceptors(FileInterceptor('file')) // <-- handle file upload
+    @UseInterceptors(FileInterceptor('file'))
     async create(
         @UploadedFile() file: Express.Multer.File,
         @Body() dto: CreateProductDto,
