@@ -9,7 +9,6 @@ import {
     Body,
     UseGuards,
     ParseIntPipe,
-    Req,
     UploadedFile,
     UseInterceptors,
 } from '@nestjs/common';
@@ -23,28 +22,40 @@ import { Roles } from '../auth/decorator/role-decorator';
 import { CreateProductDto } from './dto/create-product.dto';
 import { CurrentUser } from '../auth/decorator/current-user.decorator';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiBody, ApiConsumes, ApiParam, ApiResponse } from '@nestjs/swagger';
 
+@ApiTags('Products')
+@ApiBearerAuth()
 @Controller('products')
 export class ProductsController {
     constructor(
         private readonly productsService: ProductsService,
-        private readonly fileUploadService: FileUploadService, // inject FileUploadService
+        private readonly fileUploadService: FileUploadService,
     ) {}
 
     @Get()
+    @ApiOperation({ summary: 'Get all products with optional filters, pagination, and sorting' })
+    @ApiResponse({ status: 200, description: 'List of products returned' })
     async findAll(@Query() query: QueryProductDto) {
         return this.productsService.findAll(query);
     }
 
     @Get(':id')
+    @ApiOperation({ summary: 'Get a single product by ID' })
+    @ApiParam({ name: 'id', description: 'ID of the product', type: Number })
+    @ApiResponse({ status: 200, description: 'Product details returned' })
     async findOne(@Param('id', ParseIntPipe) id: number) {
         return this.productsService.findOne(id);
     }
 
     @Post()
     @UseGuards(JwtAuthGuard, RoleGuard)
-    @Roles('admin', 'seller', 'customer')
+    @Roles('admin', 'seller')
     @UseInterceptors(FileInterceptor('file'))
+    @ApiOperation({ summary: 'Create a new product' })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({ type: CreateProductDto })
+    @ApiResponse({ status: 201, description: 'Product created successfully' })
     async create(
         @UploadedFile() file: Express.Multer.File,
         @Body() dto: CreateProductDto,
@@ -55,7 +66,7 @@ export class ProductsController {
         if (file) {
             uploadedFile = await this.fileUploadService.uploadFile(
                 file,
-                dto.description, // optional description field in CreateProductDto
+                dto.description,
                 user,
             );
         }
@@ -63,9 +74,13 @@ export class ProductsController {
         return this.productsService.create(dto, user.id, uploadedFile);
     }
 
-    @UseGuards(JwtAuthGuard, RoleGuard)
-    @Roles('admin', 'seller', 'customer')
     @Patch(':id')
+    @UseGuards(JwtAuthGuard, RoleGuard)
+    @Roles('admin', 'seller')
+    @ApiOperation({ summary: 'Update a product by ID' })
+    @ApiParam({ name: 'id', description: 'ID of the product to update', type: Number })
+    @ApiBody({ type: UpdateProductDto })
+    @ApiResponse({ status: 200, description: 'Product updated successfully' })
     async update(
         @Param('id', ParseIntPipe) id: number,
         @Body() updateDto: UpdateProductDto,
@@ -73,9 +88,12 @@ export class ProductsController {
         return this.productsService.update(id, updateDto);
     }
 
-    @UseGuards(JwtAuthGuard, RoleGuard)
-    @Roles('admin', 'seller', 'customer')
     @Delete(':id')
+    @UseGuards(JwtAuthGuard, RoleGuard)
+    @Roles('admin', 'seller')
+    @ApiOperation({ summary: 'Delete a product by ID' })
+    @ApiParam({ name: 'id', description: 'ID of the product to delete', type: Number })
+    @ApiResponse({ status: 200, description: 'Product deleted successfully' })
     async remove(@Param('id', ParseIntPipe) id: number) {
         return this.productsService.remove(id);
     }

@@ -233,7 +233,7 @@ export class AuthService {
             }
         })
 
-        console.log(user?.password_reset_expires, new Date());
+        // console.log(user?.password_reset_expires, new Date());
 
         if(!user)
             throw  new BadRequestException('Invalid or expired reset token')

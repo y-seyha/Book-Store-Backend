@@ -2,8 +2,9 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import {ValidationPipe} from "@nestjs/common";
 import cookieParser from 'cookie-parser';
-// import * as crypto from 'crypto';
-// (global as any).crypto = crypto;
+import {DocumentBuilder, SwaggerModule} from "@nestjs/swagger";
+import {AuthGuard} from "@nestjs/passport";
+import {ThrottlerGuard} from "@nestjs/throttler";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -16,6 +17,17 @@ async function bootstrap() {
       }),
   );
   app.use(cookieParser());
+
+    const config = new DocumentBuilder()
+        .setTitle('Bookstore API')
+        .setDescription('API documentation for Bookstore E-commerce')
+        .setVersion('1.0')                               // API version
+        .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })
+        .build();
+
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api', app, document);
+
   await app.listen(process.env.PORT ?? 3000);
 
 

@@ -1,5 +1,4 @@
-// import * as crypto from 'crypto';
-// (global as any).crypto = crypto;
+
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -12,9 +11,17 @@ import { ReviewModule } from './review/review.module';
 import { SellerModule } from './seller/seller.module';
 import { FileUploadModule } from './file-upload/file-upload.module';
 import * as Joi from 'joi';
+import {ThrottlerGuard, ThrottlerModule} from "@nestjs/throttler";
+import {APP_GUARD} from "@nestjs/core";
 
 @Module({
   imports: [
+      ThrottlerModule.forRoot([
+        {
+          ttl : 6000, limit : 5
+        }
+      ])
+      ,
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({
@@ -48,6 +55,12 @@ import * as Joi from 'joi';
     ReviewModule,
     SellerModule,
     FileUploadModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard, //global
+    },
   ],
 })
 export class AppModule {}

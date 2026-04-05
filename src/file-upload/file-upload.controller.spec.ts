@@ -99,7 +99,7 @@ describe('FileUploadController', () => {
       );
 
       expect(result).toEqual({
-        messsage: 'File deleted successfully',
+        message: 'File deleted successfully', // fix typo here
       });
     });
   });
