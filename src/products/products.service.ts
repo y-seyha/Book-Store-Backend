@@ -101,6 +101,24 @@ export class ProductsService {
          return result;
     }
 
+    async getCategoryCounts() {
+        const categoryCounts = await this.productRepo
+            .createQueryBuilder('product')
+            .leftJoin('product.category', 'category')
+            .select('product.category_id', 'categoryId') // correct column
+            .addSelect('category.name', 'label')
+            .addSelect('COUNT(product.id)', 'count')
+            .groupBy('product.category_id')
+            .addGroupBy('category.name')
+            .getRawMany();
+
+        return categoryCounts.map(c => ({
+            categoryId: Number(c.categoryId),
+            label: c.label,
+            count: Number(c.count),
+        }));
+    }
+
     async  findOne(id : number){
         const cacheKey =   `product:${id}`;
         const cached = await  this.cacheManager.get(cacheKey);
@@ -158,5 +176,43 @@ export class ProductsService {
         await this.cacheManager.del(`product:${id}`);
 
         return {message : 'Product deleted successfully'}
+    }
+
+    async findByCategory(categoryId: number, query?: QueryProductDto) {
+        const cacheKey = `products:category:${categoryId}:${JSON.stringify(query ?? {})}`;
+        const cached = await this.cacheManager.get(cacheKey);
+        if (cached) return cached;
+
+        const qb = this.productRepo.createQueryBuilder('product')
+            .leftJoinAndSelect('product.category', 'category')
+            .leftJoinAndSelect('product.user', 'user')
+            .where('category.id = :categoryId', { categoryId });
+
+        // Optional search filter
+        if (query?.search) {
+            qb.andWhere('LOWER(product.name) LIKE LOWER(:search)', { search: `%${query.search}%` });
+        }
+
+        // Sorting
+        const sortBy = ['price','name','created_at'].includes(query?.sortBy ?? '') ? query?.sortBy : 'created_at';
+        const order: 'ASC' | 'DESC' = query?.order ?? 'DESC';
+        qb.orderBy(`product.${sortBy}`, order);
+
+        // Pagination
+        const page = query?.page ?? 1;
+        const limit = query?.limit ?? 10;
+        qb.skip((page - 1) * limit).take(limit);
+
+        const [data, total] = await qb.getManyAndCount();
+
+        const result = {
+            data,
+            total,
+            page,
+            lastPage: Math.ceil(total / limit),
+        };
+
+        await this.cacheManager.set(cacheKey, result, 60); // cache for 60 seconds
+        return result;
     }
 }

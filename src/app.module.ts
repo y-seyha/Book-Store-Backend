@@ -13,12 +13,14 @@ import { FileUploadModule } from './file-upload/file-upload.module';
 import * as Joi from 'joi';
 import {ThrottlerGuard, ThrottlerModule} from "@nestjs/throttler";
 import {APP_GUARD} from "@nestjs/core";
+import { ContactModule } from './contact/contact.module';
 
 @Module({
   imports: [
       ThrottlerModule.forRoot([
         {
-          ttl : 6000, limit : 5
+          ttl: 60,    // 60 seconds
+          limit: 20,
         }
       ])
       ,
@@ -55,6 +57,7 @@ import {APP_GUARD} from "@nestjs/core";
     ReviewModule,
     SellerModule,
     FileUploadModule,
+    ContactModule,
   ],
   providers: [
     {

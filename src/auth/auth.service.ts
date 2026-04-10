@@ -30,43 +30,85 @@ export class AuthService {
 
         }
 
-    async register(registerDto : RegisterDTO){
-        const {email, password,firstName,lastName} = registerDto;
+        //verify with email or mailer
+    // async register(registerDto : RegisterDTO){
+    //     const {email, password,firstName,lastName} = registerDto;
+    //
+    //     const existing = await  this.userRepo.findOne({
+    //         where: {email}
+    //     })
+    //     if(existing)
+    //         throw  new BadRequestException(('Email already exists'));
+    //
+    //     const passwordHash = await  bcrypt.hash(password, 10);
+    //
+    //     const verificationToken = crypto.randomBytes(32).toString('hex');
+    //     const verificationExpires = new Date(Date.now() + 3600 * 1000);
+    //
+    //     const user = this.userRepo.create({
+    //         email,
+    //         first_name : firstName,
+    //         last_name : lastName,
+    //         email_verification_token: verificationToken,
+    //         email_verification_expires: verificationExpires,
+    //     });
+    //
+    //     await  this.userRepo.save(user);
+    //
+    //     //create account
+    //     const account = this.accountRepo.create({
+    //         user,
+    //         provider : 'credentials',
+    //         provider_account_id : email,
+    //         password_hash : passwordHash
+    //     })
+    //     await  this.accountRepo.save(account);
+    //
+    //     await this.mailer.sendVerificationEmail(email, verificationToken);
+    //
+    //     return { message: 'Registration successful. Please check your email for verification.' };
+    // }
 
-        const existing = await  this.userRepo.findOne({
-            where: {email}
-        })
-        if(existing)
-            throw  new BadRequestException(('Email already exists'));
 
-        const passwordHash = await  bcrypt.hash(password, 10);
+    async register(registerDto: RegisterDTO) {
+        const { email, password, firstName, lastName } = registerDto;
 
-        const verificationToken = crypto.randomBytes(32).toString('hex');
-        const verificationExpires = new Date(Date.now() + 3600 * 1000);
+        const existing = await this.userRepo.findOne({ where: { email } });
+        if (existing) throw new BadRequestException('Email already exists');
+
+        const passwordHash = await bcrypt.hash(password, 10);
 
         const user = this.userRepo.create({
             email,
-            first_name : firstName,
-            last_name : lastName,
-            email_verification_token: verificationToken,
-            email_verification_expires: verificationExpires,
+            first_name: firstName ?? null,
+            last_name: lastName ?? null,
+            role: 'customer', // default role
+            is_verified: true, // automatically verified
         });
 
-        await  this.userRepo.save(user);
+        await this.userRepo.save(user);
 
-        //create account
         const account = this.accountRepo.create({
             user,
-            provider : 'credentials',
-            provider_account_id : email,
-            password_hash : passwordHash
-        })
-        await  this.accountRepo.save(account);
+            provider: 'credentials',
+            provider_account_id: email,
+            password_hash: passwordHash,
+        });
 
-        await this.mailer.sendVerificationEmail(email, verificationToken);
+        await this.accountRepo.save(account);
 
-        return { message: 'Registration successful. Please check your email for verification.' };
+        return {
+            message: 'Registration successful',
+            user: {
+                id: user.id,
+                email: user.email,
+                firstName: user.first_name,
+                lastName: user.last_name,
+                role: user.role,
+            },
+        };
     }
+
 
     async  verifyEmail(verifyEmailDto : VerifyEmailDTO){
         const user = await this.userRepo.findOne({
@@ -110,12 +152,13 @@ export class AuthService {
         const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
         const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
 
-        res.cookie('access_token', accessToken,{
+
+        res.cookie('access_token', accessToken, {
             httpOnly: true,
             secure: false,
-            sameSite: 'none',
-            maxAge: 15 * 60 * 1000, // 15 min
-        })
+            sameSite: 'lax',
+            maxAge: 15 * 60 * 1000,
+        });
 
         res.cookie('refresh_token', refreshToken, {
             httpOnly: true,
@@ -259,4 +302,11 @@ export class AuthService {
 
     }
 
+
+
+    async findUserById(id: string) {
+        const user = await this.userRepo.findOne({ where: { id } });
+        if (!user) throw new BadRequestException('User not found');
+        return user;
+    }
 }

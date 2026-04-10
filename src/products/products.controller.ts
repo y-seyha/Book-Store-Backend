@@ -33,6 +33,12 @@ export class ProductsController {
         private readonly fileUploadService: FileUploadService,
     ) {}
 
+
+    @Get('categories/counts')
+    async getCategoryCounts() {
+        return this.productsService.getCategoryCounts();
+    }
+
     @Get()
     @ApiOperation({ summary: 'Get all products with optional filters, pagination, and sorting' })
     @ApiResponse({ status: 200, description: 'List of products returned' })
@@ -47,6 +53,12 @@ export class ProductsController {
     async findOne(@Param('id', ParseIntPipe) id: number) {
         return this.productsService.findOne(id);
     }
+
+    @Get('/categories/:id')
+    async findByCategory(@Param('id', ParseIntPipe) categoryId : number, @Query() query: QueryProductDto) {
+        return this.productsService.findByCategory(categoryId,query);
+    }
+
 
     @Post()
     @UseGuards(JwtAuthGuard, RoleGuard)
