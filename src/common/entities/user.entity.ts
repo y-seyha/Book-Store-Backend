@@ -18,7 +18,7 @@ export class User extends BaseEntity {
     last_name: string | null;
 
     @Column({ type: 'varchar', default: 'customer' })
-    role: 'customer' | 'admin' | 'seller';
+    role: 'customer' | 'admin' | 'seller' | 'driver';
 
     @Column({ type: 'varchar', nullable: true })
     phone: string | null;

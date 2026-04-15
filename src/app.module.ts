@@ -14,6 +14,12 @@ import * as Joi from 'joi';
 import {ThrottlerGuard, ThrottlerModule} from "@nestjs/throttler";
 import {APP_GUARD} from "@nestjs/core";
 import { ContactModule } from './contact/contact.module';
+import { DeliveryTrackingModule } from './delivery_tracking/delivery_tracking.module';
+import { DeliveryDriverModule } from './delivery_driver/delivery_driver.module';
+import { UserModule } from './user/user.module';
+import { CategoriesModule } from './categories/categories.module';
+import { PaymentModule } from './payment/payment.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -58,6 +64,12 @@ import { ContactModule } from './contact/contact.module';
     SellerModule,
     FileUploadModule,
     ContactModule,
+    DeliveryTrackingModule,
+    DeliveryDriverModule,
+    UserModule,
+    CategoriesModule,
+    PaymentModule,
+    DashboardModule,
   ],
   providers: [
     {

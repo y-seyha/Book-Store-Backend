@@ -7,10 +7,11 @@ import {
     PrimaryGeneratedColumn,
     CreateDateColumn,
     UpdateDateColumn,
-    JoinColumn
+    JoinColumn, OneToOne
 } from "typeorm";
 import { User } from "./user.entity";
 import { OrderItem } from "./order-item.entity";
+import {DeliveryTracking} from "./delivery-tracking.entity";
 
 export enum OrderStatus {
     PENDING = 'pending',
@@ -60,4 +61,9 @@ export class Order extends BaseEntity {
 
     @UpdateDateColumn()
     updated_at: Date;
+
+    @OneToOne(() => DeliveryTracking, tracking => tracking.order, {
+        cascade: true,
+    })
+    tracking: DeliveryTracking;
 }

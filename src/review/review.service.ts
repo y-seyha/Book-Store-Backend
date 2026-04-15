@@ -109,4 +109,99 @@ export class ReviewService {
         await this.cacheManager.del(`reviews_product_${review.product.id}`); // invalidate cache
         return {message :"Deleted successfully"};
     }
+
+    //admin endpoint
+    async adminFindAll(query: {
+        page?: number;
+        limit?: number;
+        product_id?: number;
+        rating?: number;
+        search?: string;
+    }) {
+        const { page = 1, limit = 10, product_id, rating, search } = query;
+
+        const qb = this.reviewRepo.createQueryBuilder('review')
+            .leftJoinAndSelect('review.user', 'user')
+            .leftJoinAndSelect('review.product', 'product')
+            .orderBy('review.created_at', 'DESC');
+
+        if (product_id) {
+            qb.andWhere('product.id = :product_id', { product_id });
+        }
+
+        if (rating) {
+            qb.andWhere('review.rating = :rating', { rating });
+        }
+
+        if (search) {
+            qb.andWhere(
+                '(user.email ILIKE :search OR review.comment ILIKE :search)',
+                { search: `%${search}%` }
+            );
+        }
+
+        qb.skip((page - 1) * limit).take(limit);
+
+        const [data, total] = await qb.getManyAndCount();
+
+        return {
+            data,
+            meta: {
+                total,
+                page,
+                limit,
+                pages: Math.ceil(total / limit),
+            },
+        };
+    }
+
+    async adminFindOne(id: number) {
+        const review = await this.reviewRepo.findOne({
+            where: { id },
+            relations: ['user', 'product'],
+        });
+
+        if (!review) {
+            throw new NotFoundException('Review not found');
+        }
+
+        return review;
+    }
+
+    async adminRemove(id: number) {
+        const review = await this.reviewRepo.findOne({
+            where: { id },
+            relations: ['product'],
+        });
+
+        if (!review) {
+            throw new NotFoundException('Review not found');
+        }
+
+        await this.reviewRepo.remove(review);
+
+        await this.cacheManager.del(`reviews_product_${review.product?.id || 'all'}`);
+
+        return { message: 'Review deleted successfully' };
+    }
+
+    async adminUpdate(id: number, dto: UpdateReviewDto) {
+        const review = await this.reviewRepo.findOne({
+            where: { id },
+            relations: ['product'],
+        });
+
+        if (!review) {
+            throw new NotFoundException('Review not found');
+        }
+
+        Object.assign(review, dto);
+
+        const updated = await this.reviewRepo.save(review);
+
+        await this.cacheManager.del(`reviews_product_${review.product?.id || 'all'}`);
+
+        return updated;
+    }
+
 }

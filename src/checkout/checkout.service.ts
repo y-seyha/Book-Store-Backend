@@ -1,14 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
-import { Order } from '../common/entities/order.entity';
-import { OrderItem } from '../common/entities/order-item.entity';
-import { Product } from '../common/entities/product.entity';
-import { CartItem } from '../common/entities/cart-item.entity';
-import { Payment, PaymentStatus } from '../common/entities/payment.entity';
-import { CheckoutDto } from './dto/checkout.dto';
-import { User } from '../common/entities/user.entity';
+import {BadRequestException, Injectable, NotFoundException} from '@nestjs/common';
+import {InjectRepository} from '@nestjs/typeorm';
+import {DataSource, Repository} from 'typeorm';
+import {Order} from '../common/entities/order.entity';
+import {OrderItem} from '../common/entities/order-item.entity';
+import {Product} from '../common/entities/product.entity';
+import {CartItem} from '../common/entities/cart-item.entity';
+import {Payment, PaymentStatus} from '../common/entities/payment.entity';
+import {CheckoutDto} from './dto/checkout.dto';
+import {User} from '../common/entities/user.entity';
 import {Cart} from "../common/entities/cart..entity";
+import {DeliveryStatus, DeliveryTracking} from "../common/entities/delivery-tracking.entity";
+import {DriverProfile} from "../common/entities/driver_profile.entity";
 
 @Injectable()
 export class CheckoutService {
@@ -30,6 +32,12 @@ export class CheckoutService {
 
         @InjectRepository(Payment)
         private paymentRepo: Repository<Payment>,
+
+        @InjectRepository(DeliveryTracking)
+        private deliveryTrackingRepo : Repository<DeliveryTracking>,
+
+        @InjectRepository(DriverProfile)
+        private driverRepo: Repository<DriverProfile>,
 
         private dataSource: DataSource
     ) {}
@@ -68,7 +76,7 @@ export class CheckoutService {
             for (const cartItem of activeItems) {
                 const product = cartItem.product;
 
-                if (!product) throw new NotFoundException(`Product } not found`);
+                if (!product) throw new NotFoundException(`Product not found`);
                 if (product.stock < cartItem.quantity) {
                     throw new BadRequestException(`Not enough stock for product ${product.name}`);
                 }
@@ -106,9 +114,42 @@ export class CheckoutService {
             });
             await manager.save(payment);
 
+            const driverRepo = manager.getRepository(DriverProfile);
+
+            const driverProfile = await driverRepo.findOne({
+                where: { is_available: true },
+                relations: ['user']
+            });
+            if (!driverProfile) {
+                throw new BadRequestException('No available driver right now');
+            }
+
+            const tracking = manager.create(DeliveryTracking, {
+                order,
+                order_id: order.id,
+                driverProfile: driverProfile,
+                status: DeliveryStatus.PREPARING
+            });
+
+            driverProfile.is_available = false;
+            await manager.save(driverProfile);
+
+            await manager.save(tracking);
+
+            const fullTracking = await manager.findOne(DeliveryTracking, {
+                where: { id: tracking.id },
+                relations: {
+                    order: true,
+                    driverProfile: {
+                        user: true
+                    }
+                }
+            });
+
             return {
                 order,
-                payment
+                payment,
+                tracking: fullTracking
             };
         });
     }

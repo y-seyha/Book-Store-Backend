@@ -57,7 +57,7 @@ export class SellerController {
     }
 
     /** Admin routes: Get all sellers */
-    @Get()
+    @Get('/admin')
     @UseGuards(JwtAuthGuard, RoleGuard)
     @Roles('admin')
     @ApiBearerAuth()
@@ -68,7 +68,7 @@ export class SellerController {
     }
 
     /** Admin: Get seller by ID */
-    @Get(':id')
+    @Get('/admin/:id')
     @UseGuards(JwtAuthGuard, RoleGuard)
     @Roles('admin')
     @ApiBearerAuth()
@@ -81,7 +81,7 @@ export class SellerController {
     }
 
     /** Admin: Update seller by ID */
-    @Put(':id')
+    @Put('/admin/:id')
     @UseGuards(JwtAuthGuard, RoleGuard)
     @Roles('admin')
     @ApiBearerAuth()
@@ -96,7 +96,7 @@ export class SellerController {
     }
 
     /** Admin: Delete seller by ID */
-    @Delete(':id')
+    @Delete('/admin/:id')
     @UseGuards(JwtAuthGuard, RoleGuard)
     @Roles('admin')
     @ApiBearerAuth()

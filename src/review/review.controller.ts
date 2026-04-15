@@ -17,6 +17,8 @@ import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorator/current-user.decorator';
 import { User } from '../common/entities/user.entity';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery, ApiParam, ApiResponse, ApiBody } from '@nestjs/swagger';
+import {RoleGuard} from "../auth/guard/role-guard.guard";
+import {Roles} from "../auth/decorator/role-decorator";
 
 @ApiTags('Reviews')
 @ApiBearerAuth()
@@ -96,5 +98,41 @@ export class ReviewController {
         @CurrentUser() user: User
     ) {
         return this.reviewService.remove(user, id);
+    }
+
+    // admin route
+    @Get('admin/all')
+    @UseGuards(JwtAuthGuard, RoleGuard)
+    @Roles('admin')
+    @ApiOperation({ summary: 'Admin: Get all reviews (full control)' })
+    async adminFindAll(@Query() query: any) {
+        return this.reviewService.adminFindAll(query);
+    }
+
+    @Get('admin/:id')
+    @UseGuards(JwtAuthGuard, RoleGuard)
+    @Roles('admin')
+    @ApiOperation({ summary: 'Admin: Get review by ID' })
+    async adminFindOne(@Param('id', ParseIntPipe) id: number) {
+        return this.reviewService.adminFindOne(id);
+    }
+
+    @Delete('admin/:id')
+    @UseGuards(JwtAuthGuard, RoleGuard)
+    @Roles('admin')
+    @ApiOperation({ summary: 'Admin: Delete any review' })
+    async adminRemove(@Param('id', ParseIntPipe) id: number) {
+        return this.reviewService.adminRemove(id);
+    }
+
+    @Put('admin/:id')
+    @UseGuards(JwtAuthGuard, RoleGuard)
+    @Roles('admin')
+    @ApiOperation({ summary: 'Admin: Update any review' })
+    async adminUpdate(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() dto: UpdateReviewDto,
+    ) {
+        return this.reviewService.adminUpdate(id, dto);
     }
 }
