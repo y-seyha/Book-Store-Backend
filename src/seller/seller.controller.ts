@@ -8,7 +8,7 @@ import {
     Param,
     UseGuards,
     Request,
-    ParseUUIDPipe,
+    ParseUUIDPipe, ParseIntPipe,
 } from '@nestjs/common';
 import { SellerService } from './seller.service';
 import { CreateSellerDto } from './dto/create-seller.dto';
@@ -17,6 +17,7 @@ import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { Roles } from '../auth/decorator/role-decorator';
 import { RoleGuard } from '../auth/guard/role-guard.guard';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse, ApiParam } from '@nestjs/swagger';
+import {OrderItemStatus} from "../common/entities/order-item.entity";
 
 @ApiTags('Sellers')
 @Controller('sellers')
@@ -107,4 +108,41 @@ export class SellerController {
     async deleteSeller(@Param('id', ParseUUIDPipe) id: string) {
         return this.sellerService.removeByAdmin(id);
     }
+
+    @Get('orders')
+    @UseGuards(JwtAuthGuard, RoleGuard)
+    @Roles('seller')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Seller: Get my order items (only own products)' })
+    @ApiResponse({ status: 200, description: 'Returns seller order items' })
+    async getMyOrders(@Request() req) {
+        return this.sellerService.getMyOrder(req.user);
+    }
+
+    @Put('order-items/:id/status')
+    @UseGuards(JwtAuthGuard, RoleGuard)
+    @Roles('seller')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Seller: Update order item status' })
+    @ApiParam({ name: 'id', description: 'Order Item ID' })
+    @ApiResponse({ status: 200, description: 'Order item updated successfully' })
+    @ApiResponse({ status: 403, description: 'Forbidden' })
+    async updateOrderItemStatus(
+        @Request() req,
+        @Param('id', ParseIntPipe) id: number,
+        @Body('status') status: OrderItemStatus,
+    ) {
+        return this.sellerService.updateOrderItemStatus(req.user, id, status);
+    }
+
+    @Get('dashboard')
+    @UseGuards(JwtAuthGuard, RoleGuard)
+    @Roles('seller')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Seller: Get dashboard analytics' })
+    @ApiResponse({ status: 200, description: 'Returns seller dashboard data' })
+    async getSellerDashboard(@Request() req) {
+        return this.sellerService.getSellerDashboard(req.user);
+    }
+
 }
