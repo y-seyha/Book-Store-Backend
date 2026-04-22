@@ -89,14 +89,46 @@ export class ProductsController {
     @Patch(':id')
     @UseGuards(JwtAuthGuard, RoleGuard)
     @Roles('admin', 'seller')
+    @UseInterceptors(FileInterceptor('file'))
     @ApiOperation({ summary: 'Update a product by ID' })
+    @ApiConsumes('multipart/form-data')
     @ApiParam({ name: 'id', description: 'ID of the product to update', type: Number })
-    @ApiBody({ type: UpdateProductDto })
     @ApiResponse({ status: 200, description: 'Product updated successfully' })
     async update(
         @Param('id', ParseIntPipe) id: number,
+        @UploadedFile() file: Express.Multer.File,
         @Body() updateDto: UpdateProductDto,
+        @CurrentUser() user: any,
     ) {
+        let uploadedFile;
+
+        // 1. handle image upload (same as CREATE)
+        if (file) {
+            uploadedFile = await this.fileUploadService.uploadFile(
+                file,
+                updateDto.description,
+                user,
+            );
+
+            // attach uploaded file data into DTO
+            updateDto.image_url = uploadedFile.url;
+            updateDto.image_public_id = uploadedFile.public_id;
+        }
+
+        // 2. ensure correct type conversion (important for FormData)
+        if (updateDto.price !== undefined) {
+            updateDto.price = Number(updateDto.price);
+        }
+
+        if (updateDto.stock !== undefined) {
+            updateDto.stock = Number(updateDto.stock);
+        }
+
+        if (updateDto.categoryId !== undefined) {
+            updateDto.categoryId = Number(updateDto.categoryId);
+        }
+
+        // 3. call service
         return this.productsService.update(id, updateDto);
     }
 

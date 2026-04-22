@@ -162,7 +162,16 @@ export class ProductsService {
         await  this.cacheManager.del('products');
         await this.cacheManager.del(`product:${id}`);
 
-        return updated;
+        return {
+            id: updated.id,
+            name: updated.name,
+            description: updated.description,
+            price: updated.price,
+            stock: updated.stock,
+            image_url: updated.image_url,
+            category: updated.category,
+            user: updated.user,
+        };
     }
 
     async  remove(id : number){

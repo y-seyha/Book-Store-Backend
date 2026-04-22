@@ -3,10 +3,10 @@ import {InjectRepository} from "@nestjs/typeorm";
 import {User} from "../common/entities/user.entity";
 import {DataSource, ILike, Repository} from "typeorm";
 import {QueryUserDto} from "./dto/query-user.dto";
-import {UpdateUserDto} from "./dto/update-user.dto";
 import {CreateUserDto} from "./dto/create-user-dto";
 import * as bcrypt from "bcrypt";
 import {Account} from "../common/entities/account.entity";
+import {UpdateUserDto} from "./dto/update-user.dto";
 
 @Injectable()
 export class UserService {
@@ -57,7 +57,13 @@ export class UserService {
     async update(id: string, dto: UpdateUserDto) {
         const user = await this.findOne(id);
 
-        Object.assign(user, dto);
+        // only allow safe fields
+        const { first_name, last_name, phone, avatar_url } = dto;
+
+        if (first_name !== undefined) user.first_name = first_name;
+        if (last_name !== undefined) user.last_name = last_name;
+        if (phone !== undefined) user.phone = phone;
+        if (avatar_url !== undefined) user.avatar_url = avatar_url;
 
         return this.userRepo.save(user);
     }

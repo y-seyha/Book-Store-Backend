@@ -1,9 +1,26 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsBoolean, IsEnum } from 'class-validator';
-import {Role} from "./create-user-dto";
-
+import {
+    IsOptional,
+    IsString,
+    IsBoolean,
+    IsEnum,
+    IsEmail,
+    MinLength,
+} from 'class-validator';
+import { Role } from './create-user-dto';
 
 export class UpdateUserDto {
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsEmail()
+    email?: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsString()
+    @MinLength(6)
+    password?: string;
+
     @ApiPropertyOptional({ example: 'John' })
     @IsOptional()
     @IsString()
@@ -29,7 +46,7 @@ export class UpdateUserDto {
     @IsEnum(Role)
     role?: Role;
 
-    @ApiPropertyOptional({ example: true })
+    @ApiPropertyOptional()
     @IsOptional()
     @IsBoolean()
     is_verified?: boolean;

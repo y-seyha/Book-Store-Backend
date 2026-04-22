@@ -32,8 +32,8 @@ export class UserController {
     @Get()
     @UseGuards(JwtAuthGuard, RoleGuard)
     @Roles('admin')
-    @ApiOperation({ summary: 'Get all users (Admin only)' })
-    @ApiResponse({ status: 200, description: 'List of users' })
+    @ApiOperation({ summary: 'Get all users-dashboard (Admin only)' })
+    @ApiResponse({ status: 200, description: 'List of users-dashboard' })
     async findAll(@Query() query: QueryUserDto) {
         return this.usersService.findAll(query);
     }
