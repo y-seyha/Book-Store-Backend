@@ -64,41 +64,62 @@ export class ProductsService {
     }
 
 
-    async findAll(query : QueryProductDto){
-        const cacheKey = `products:${JSON.stringify(query)}`;
-        const cached = await  this.cacheManager.get(cacheKey);
-        if(cached)
-            return cached;
+    async findAll(query: QueryProductDto) {
+        const page = Number(query.page) || 1;
+        const limit = Number(query.limit) || 10;
 
-        const qb = this.productRepo.createQueryBuilder('product')
-            .leftJoinAndSelect('product.category','category')
-            .leftJoinAndSelect('product.user','user');
+        const normalizedQuery = {
+            search: query.search ?? "",
+            categoryId: query.categoryId ?? null,
+            sortBy: query.sortBy ?? "created_at",
+            order: query.order ?? "DESC",
+            page,
+            limit,
+        };
 
-        if(query.search)
-            qb.andWhere('LOWER(product.name) LIKE LOWER(:search)', { search: `%${query.search}%` });
+        const cacheKey = `products:${JSON.stringify(normalizedQuery)}`;
 
-        if(query.categoryId)
-            qb.andWhere('category.id = :categoryId', { categoryId: query.categoryId });
+        const cached = await this.cacheManager.get(cacheKey);
+        if (cached) return cached;
 
-        //sort
-        const sortBy = ['price','name','created_at'].includes(query.sortBy ?? '') ? query.sortBy: 'created_at';
-        const order : 'ASC' | 'DESC' = query.order ?? 'DESC'
-        qb.orderBy(`product.${sortBy}`,order)
+        const qb = this.productRepo
+            .createQueryBuilder("product")
+            .leftJoinAndSelect("product.category", "category")
+            .leftJoinAndSelect("product.user", "user");
 
-        //pagination
-        const page = query.page ?? 1;
-         const limit = query.limit ?? 10;
+        if (normalizedQuery.search) {
+            qb.andWhere(
+                "LOWER(product.name) LIKE LOWER(:search)",
+                { search: `%${normalizedQuery.search}%` }
+            );
+        }
+
+        if (normalizedQuery.categoryId) {
+            qb.andWhere("category.id = :categoryId", {
+                categoryId: normalizedQuery.categoryId,
+            });
+        }
+
+        const sortBy = ["price", "name", "created_at"].includes(normalizedQuery.sortBy)
+            ? normalizedQuery.sortBy
+            : "created_at";
+
+        qb.orderBy(`product.${sortBy}`, normalizedQuery.order as "ASC" | "DESC");
+
         qb.skip((page - 1) * limit).take(limit);
 
-        const [data, total] = await  qb.getManyAndCount()
+        const [data, total] = await qb.getManyAndCount();
+
         const result = {
-             data,
+            data,
             total,
-             page,
-            lastPage : Math.ceil(total / limit),
-        }
-        await this.cacheManager.set(cacheKey, result,  60 );
-         return result;
+            page,
+            lastPage: Math.ceil(total / limit),
+        };
+
+        await this.cacheManager.set(cacheKey, result, 60);
+
+        return result;
     }
 
     async getCategoryCounts() {

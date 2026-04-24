@@ -28,12 +28,16 @@ export class DashboardService {
             totalSales,
             totalOrders,
             activeUsers,
+            totalSellers,
+            totalDrivers,
             topProducts,
             revenueChart,
         ] = await Promise.all([
             this.getTotalSales(),
             this.getTotalOrders(),
             this.getActiveUsers(),
+            this.getTotalSellers(),
+            this.getTotalDrivers(),
             this.getTopProducts(),
             this.getRevenueChart(),
         ]);
@@ -42,6 +46,8 @@ export class DashboardService {
             totalSales,
             totalOrders,
             activeUsers,
+            totalSellers,
+            totalDrivers,
             topProducts,
             revenueChart,
         };
@@ -84,6 +90,22 @@ export class DashboardService {
             .orderBy('SUM(item.quantity)', 'DESC')
             .limit(5)
             .getRawMany();
+    }
+
+    private async getTotalSellers(): Promise<number> {
+        return this.userRepo.count({
+            where: {
+                role: 'seller',
+            },
+        });
+    }
+
+    private async getTotalDrivers(): Promise<number> {
+        return this.userRepo.count({
+            where: {
+                role: 'driver',
+            },
+        });
     }
 
     private async getRevenueChart() {
