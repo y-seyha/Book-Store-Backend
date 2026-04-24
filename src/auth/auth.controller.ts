@@ -11,6 +11,7 @@ import type { Request, Response } from 'express';
 import {LoginThrottlerGuard} from "./guard/login-throttler.guard";
 import type {AuthRequest} from "./interface/auth-request.interface";
 import {AuthGuard} from "@nestjs/passport";
+import {getCookieOptions} from "../utils/cookie.util";
 
 @ApiTags('Auth') // grouping in Swagger UI
 @Controller('auth')
@@ -45,19 +46,8 @@ export class AuthController {
 
     @Post('logout')
     logout(@Res({ passthrough: true }) res: Response) {
-        // Clear cookies — must match exactly what you set during login
-        res.clearCookie('access_token', {
-            httpOnly: true,
-            secure: false, // true if in production https
-            sameSite: 'lax',
-            path: '/',
-        });
-        res.clearCookie('refresh_token', {
-            httpOnly: true,
-            secure: false,
-            sameSite: 'lax',
-            path: '/',
-        });
+        res.clearCookie('access_token', getCookieOptions());
+        res.clearCookie('refresh_token', getCookieOptions());
 
         return { message: 'Logged out successfully' };
     }
@@ -110,17 +100,13 @@ export class AuthController {
         const user = req.user;
 
         res.cookie('access_token', user.accessToken, {
-            httpOnly: true,
-            secure: false, // true in production (HTTPS)
-            sameSite: 'lax',
-            maxAge: 15 * 60 * 1000, // 15 minutes
+            ...getCookieOptions(),
+            maxAge: 15 * 60 * 1000,
         });
 
         res.cookie('refresh_token', user.refreshToken, {
-            httpOnly: true,
-            secure: false,
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            ...getCookieOptions(),
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
         return res.redirect(`${process.env.FRONTEND_URL}?login=success`);
@@ -137,18 +123,15 @@ export class AuthController {
         const user = req.user;
 
         res.cookie('access_token', user.accessToken, {
-            httpOnly: true,
-            secure: false, // true in production (HTTPS)
-            sameSite: 'lax',
-            maxAge: 15 * 60 * 1000, // 15 minutes
+            ...getCookieOptions(),
+            maxAge: 15 * 60 * 1000,
         });
 
         res.cookie('refresh_token', user.refreshToken, {
-            httpOnly: true,
-            secure: false,
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            ...getCookieOptions(),
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         });
+
         return res.redirect(`${process.env.FRONTEND_URL}?login=success`);
     }
 
@@ -163,17 +146,13 @@ export class AuthController {
         const user = req.user;
 
         res.cookie('access_token', user.accessToken, {
-            httpOnly: true,
-            secure: false, // true in production (HTTPS)
-            sameSite: 'lax',
-            maxAge: 15 * 60 * 1000, // 15 minutes
+            ...getCookieOptions(),
+            maxAge: 15 * 60 * 1000,
         });
 
         res.cookie('refresh_token', user.refreshToken, {
-            httpOnly: true,
-            secure: false,
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            ...getCookieOptions(),
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
         return res.redirect(`${process.env.FRONTEND_URL}?login=success`);

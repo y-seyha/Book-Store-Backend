@@ -14,6 +14,7 @@ import {MailerService} from "../utils/mailer.util";
 import { Request, Response } from 'express';
 import {ForgotPasswordDto} from "./dto/forgotPassword.dto";
 import {ResetpasswordDto} from "./dto/resetpassword.dto";
+import {getCookieOptions} from "../utils/cookie.util";
 
 @Injectable()
 export class AuthService {
@@ -153,33 +154,14 @@ export class AuthService {
         const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
 
 
-        // prod
-        // res.cookie('access_token', accessToken, {
-        //     httpOnly: true,
-        //     secure: false,
-        //     sameSite: 'lax',
-        //     maxAge: 15 * 60 * 1000,
-        // });
-        //
-        // res.cookie('refresh_token', refreshToken, {
-        //     httpOnly: true,
-        //     secure: false, // dev
-        //     sameSite: 'lax',
-        //     maxAge: 7 * 24 * 60 * 60 * 1000,
-        // });
-
         res.cookie('access_token', accessToken, {
-            httpOnly: true,
-            secure: false,
-            sameSite: 'lax',
-            maxAge: 60 * 60 * 1000, // 1 hour
+            ...getCookieOptions(),
+            maxAge: 60 * 60 * 1000,
         });
 
         res.cookie('refresh_token', refreshToken, {
-            httpOnly: true,
-            secure: false,
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            ...getCookieOptions(),
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
         return {
