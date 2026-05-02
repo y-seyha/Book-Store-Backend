@@ -44,7 +44,7 @@ export class CategoriesController {
 
     @Get()
     @UseGuards(JwtAuthGuard, RoleGuard)
-    @Roles('admin')
+    @Roles('admin', "seller")
     @ApiOperation({ summary: 'Get all categories' })
     async findAll(@Query() query: QueryCategoryDto) {
         return this.categoryService.findAll(query);

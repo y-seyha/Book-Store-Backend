@@ -10,7 +10,6 @@ import {CreateProductDto} from "./dto/create-product.dto";
 import {QueryProductDto} from "./dto/query.dto";
 import {UpdateProductDto} from "./dto/update-product.dto";
 import {File} from "../common/entities/file-upload.entity"
-import type { Express } from 'express';
 
 
 @Injectable()

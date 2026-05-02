@@ -1,4 +1,4 @@
-import {BadRequestException, ForbiddenException, Injectable, NotFoundException} from '@nestjs/common';
+import {BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException} from '@nestjs/common';
 import {InjectRepository} from "@nestjs/typeorm";
 import {Seller} from "../common/entities/seller.entity";
 import {DataSource, Repository} from "typeorm";
@@ -8,6 +8,9 @@ import {UpdateSellerDto} from "./dto/update-seller.dto";
 import {OrderItem, OrderItemStatus} from "../common/entities/order-item.entity";
 import {Payment, PaymentStatus} from "../common/entities/payment.entity";
 import {Product} from "../common/entities/product.entity";
+import {QueryProductDto} from "../products/dto/query.dto";
+import {CACHE_MANAGER} from "@nestjs/cache-manager";
+import type {Cache} from "cache-manager";
 
 @Injectable()
 export class SellerService {
@@ -28,6 +31,9 @@ export class SellerService {
         private productRepo: Repository<Product>,
 
         private dataSource: DataSource,
+
+        @Inject(CACHE_MANAGER)
+        private cacheManager: Cache,
     ) {}
 
     // Become a seller
@@ -202,6 +208,52 @@ export class SellerService {
             totalOrders,
             topProducts,
         };
+    }
+
+    async findBySeller(userId: string, query?: QueryProductDto) {
+        const cacheKey = `products:seller:${userId}:${JSON.stringify(query ?? {})}`;
+        const cached = await this.cacheManager.get(cacheKey);
+        if (cached) return cached;
+
+        const qb = this.productRepo
+            .createQueryBuilder('product')
+            .leftJoinAndSelect('product.category', 'category')
+            .leftJoinAndSelect('product.user', 'user')
+            .where('user.id = :userId', { userId });
+
+        // Search
+        if (query?.search) {
+            qb.andWhere(
+                'LOWER(product.name) LIKE LOWER(:search)',
+                { search: `%${query.search}%` }
+            );
+        }
+
+        // Sorting
+        const sortBy = ['price', 'name', 'created_at'].includes(query?.sortBy ?? '')
+            ? query?.sortBy
+            : 'created_at';
+
+        const order: 'ASC' | 'DESC' = query?.order ?? 'DESC';
+        qb.orderBy(`product.${sortBy}`, order);
+
+        // Pagination
+        const page = query?.page ?? 1;
+        const limit = query?.limit ?? 10;
+        qb.skip((page - 1) * limit).take(limit);
+
+        const [data, total] = await qb.getManyAndCount();
+
+        const result = {
+            data,
+            total,
+            page,
+            lastPage: Math.ceil(total / limit),
+        };
+
+        await this.cacheManager.set(cacheKey, result, 60);
+
+        return result;
     }
 
 

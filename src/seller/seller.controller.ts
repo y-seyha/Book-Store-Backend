@@ -8,7 +8,7 @@ import {
     Param,
     UseGuards,
     Request,
-    ParseUUIDPipe, ParseIntPipe,
+    ParseUUIDPipe, ParseIntPipe, Query,
 } from '@nestjs/common';
 import { SellerService } from './seller.service';
 import { CreateSellerDto } from './dto/create-seller.dto';
@@ -18,6 +18,8 @@ import { Roles } from '../auth/decorator/role-decorator';
 import { RoleGuard } from '../auth/guard/role-guard.guard';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse, ApiParam } from '@nestjs/swagger';
 import {OrderItemStatus} from "../common/entities/order-item.entity";
+import {CurrentUser} from "../auth/decorator/current-user.decorator";
+import {QueryProductDto} from "../products/dto/query.dto";
 
 @ApiTags('Sellers')
 @Controller('sellers')
@@ -34,6 +36,18 @@ export class SellerController {
     async becomeSeller(@Request() req, @Body() createSellerDto: CreateSellerDto) {
         return this.sellerService.becomeSeller(req.user, createSellerDto);
     }
+
+
+    @Get('/my-products')
+    @UseGuards(JwtAuthGuard, RoleGuard)
+    @Roles('seller')
+    async getMyProducts(
+        @CurrentUser() user: any,
+        @Query() query: QueryProductDto,
+    ) {
+        return this.sellerService.findBySeller(user.id, query);
+    }
+
 
     /** Get current user's seller info */
     @Get('me')

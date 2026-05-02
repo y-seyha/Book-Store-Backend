@@ -20,6 +20,7 @@ import { UserModule } from './user/user.module';
 import { CategoriesModule } from './categories/categories.module';
 import { PaymentModule } from './payment/payment.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { ProfileModule } from './profile/profile.module';
 
 @Module({
   imports: [
@@ -73,6 +74,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     CategoriesModule,
     PaymentModule,
     DashboardModule,
+    ProfileModule,
   ],
   providers: [
     {

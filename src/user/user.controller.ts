@@ -6,7 +6,7 @@ import {
     Param,
     Query,
     Body,
-    UseGuards, Post,
+    UseGuards, Post, Req,
 } from '@nestjs/common';
 import { QueryUserDto } from './dto/query-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -22,6 +22,7 @@ import {
 } from '@nestjs/swagger';
 import {UserService} from "./user.service";
 import {CreateUserDto} from "./dto/create-user-dto";
+
 
 @ApiTags('Users (Admin)')
 @ApiBearerAuth()
