@@ -21,6 +21,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { PaymentModule } from './payment/payment.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ProfileModule } from './profile/profile.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { ProfileModule } from './profile/profile.module';
     PaymentModule,
     DashboardModule,
     ProfileModule,
+    NotificationModule,
   ],
   providers: [
     {

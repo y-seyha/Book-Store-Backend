@@ -8,6 +8,8 @@ import {AssignDriverDto} from "./dto/assign-driver.dto";
 import {UpdateStatusDto} from "./dto/update-status.dto";
 import {FailDeliveryDto} from "./dto/fail-delivery.dto";
 import {Order, OrderStatus} from "../common/entities/order.entity";
+import { NotificationGateway } from '../notification/notification.gateway';
+import { Notification } from "../common/entities/notifications.entity";
 
 @Injectable()
 export class DeliveryTrackingService {
@@ -20,6 +22,11 @@ export class DeliveryTrackingService {
 
         @InjectRepository(Order)
         private orderRepo: Repository<Order>,
+
+        @InjectRepository(Notification)
+        private notificationRepo: Repository<Notification>,
+
+        private readonly notificationGateway: NotificationGateway,
     ) {
     }
 
@@ -78,61 +85,116 @@ export class DeliveryTrackingService {
     }
 
     async markFailed(id: number, dto: FailDeliveryDto) {
-        const tracking = await this.trackingRepo.findOne({
-            where: { id },
-            relations: {
-                driverProfile: true,
-                order: true
+        try {
+            const tracking = await this.trackingRepo.findOne({
+                where: { id },
+                relations: {
+                    driverProfile: true,
+                    order: { user: true },
+                },
+            });
+
+            if (!tracking) throw new NotFoundException('Tracking not found');
+
+            tracking.result = DeliveryResult.CANCELLED;
+            tracking.failure_reason = dto.reason;
+            tracking.status = DeliveryStatus.CANCELLED;
+
+            if (tracking.driverProfile) {
+                tracking.driverProfile.is_available = true;
+                await this.driverRepo.save(tracking.driverProfile);
             }
-        });
 
-        if (!tracking) {
-            throw new NotFoundException('Tracking not found');
+            if (tracking.order) {
+                tracking.order.status = OrderStatus.CANCELLED;
+                await this.orderRepo.save(tracking.order);
+            }
+
+            const savedTracking = await this.trackingRepo.save(tracking);
+
+            const userId = tracking.order?.user?.id;
+
+            if (userId) {
+                await this.notificationRepo.save({
+                    userId,
+                    type: "delivery",
+                    message: `Order #${tracking.order.id} failed`,
+                    orderId: tracking.order.id,
+                    deliveryTrackingId: tracking.id,
+                    isRead: false,
+                });
+
+                this.notificationGateway.sendToUser(userId, "delivery_failed", {
+                    type: "delivery_failed",
+                    orderId: tracking.order.id,
+                    reason: dto.reason,
+                    message: `Order #${tracking.order.id} failed`,
+                });
+            }
+
+            return savedTracking;
+
+        } catch (err) {
+            console.error("markFailed error:", err);
+            throw err;
         }
-
-        tracking.result = DeliveryResult.CANCELLED;
-        tracking.failure_reason = dto.reason;
-
-        tracking.status = DeliveryStatus.CANCELLED as any;
-
-        if (tracking.driverProfile) {
-            tracking.driverProfile.is_available = true;
-            await this.driverRepo.save(tracking.driverProfile);
-        }
-
-
-        tracking.order.status = OrderStatus.CANCELLED;
-        await this.orderRepo.save(tracking.order);
-
-
-        return this.trackingRepo.save(tracking);
     }
 
 
     async markDelivered(id: number) {
-        const tracking = await this.trackingRepo.findOne({
-            where: { id },
-            relations: {
-                driverProfile: true,
-                order: true
+        try {
+            const tracking = await this.trackingRepo.findOne({
+                where: { id },
+                relations: {
+                    driverProfile: true,
+                    order: { user: true },
+                },
+            });
+
+            if (!tracking) {
+                throw new NotFoundException('Tracking not found');
             }
-        });
 
-        if (!tracking) {
-            throw new NotFoundException('Tracking not found');
+            tracking.status = DeliveryStatus.DELIVERED;
+            tracking.result = DeliveryResult.SUCCESS;
+
+            if (tracking.order) {
+                tracking.order.status = OrderStatus.COMPLETED;
+                await this.orderRepo.save(tracking.order);
+            }
+
+            if (tracking.driverProfile) {
+                tracking.driverProfile.is_available = true;
+                await this.driverRepo.save(tracking.driverProfile);
+            }
+
+            const savedTracking = await this.trackingRepo.save(tracking);
+
+            const userId = tracking.order?.user?.id;
+
+            if (userId) {
+                await this.notificationRepo.save({
+                    userId,
+                    type: "delivery",
+                    message: `Order #${tracking.order.id} delivered successfully`,
+                    orderId: tracking.order.id,
+                    deliveryTrackingId: tracking.id,
+                    isRead: false,
+                });
+
+                this.notificationGateway.sendToUser(userId, "delivery_success", {
+                    type: "delivery_success",
+                    orderId: tracking.order.id,
+                    message: `Order #${tracking.order.id} delivered successfully`,
+                });
+            }
+
+            return savedTracking;
+
+        } catch (err) {
+            console.error("markDelivered error:", err);
+            throw err;
         }
-
-        tracking.status = DeliveryStatus.DELIVERED;
-        tracking.result = DeliveryResult.SUCCESS;
-        tracking.order.status = OrderStatus.COMPLETED;
-        await this.orderRepo.save(tracking.order);
-
-        if (tracking.driverProfile) {
-            tracking.driverProfile.is_available = true;
-            await this.driverRepo.save(tracking.driverProfile);
-        }
-
-        return this.trackingRepo.save(tracking);
     }
 
 }
