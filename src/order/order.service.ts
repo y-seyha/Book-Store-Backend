@@ -9,183 +9,276 @@ import { DataSource, Repository } from 'typeorm';
 import { Order, OrderStatus } from '../common/entities/order.entity';
 import { OrderItem } from '../common/entities/order-item.entity';
 import { Product } from '../common/entities/product.entity';
-import {DeliveryStatus, DeliveryTracking} from '../common/entities/delivery-tracking.entity';
+import {
+  DeliveryResult,
+  DeliveryStatus,
+  DeliveryTracking,
+} from '../common/entities/delivery-tracking.entity';
 
 import { QueryOrderDto } from './dto/query-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
-import { AssignDriverDto } from './dto/assign-driver.dto';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { UpdateOrderItemDto } from './dto/update-order-item.dto';
+import { DriverProfile } from '../common/entities/driver_profile.entity';
+import { Payment, PaymentStatus } from '../common/entities/payment.entity';
+import { NotificationGateway } from '../notification/notification.gateway';
 
 @Injectable()
 export class OrderService {
-    constructor(
-        @InjectRepository(Order)
-        private orderRepo: Repository<Order>,
+  constructor(
+    @InjectRepository(Order)
+    private orderRepo: Repository<Order>,
 
-        @InjectRepository(OrderItem)
-        private orderItemRepo: Repository<OrderItem>,
+    @InjectRepository(OrderItem)
+    private orderItemRepo: Repository<OrderItem>,
 
-        @InjectRepository(Product)
-        private productRepo: Repository<Product>,
+    @InjectRepository(Product)
+    private productRepo: Repository<Product>,
 
-        @InjectRepository(DeliveryTracking)
-        private trackingRepo: Repository<DeliveryTracking>,
+    @InjectRepository(DeliveryTracking)
+    private trackingRepo: Repository<DeliveryTracking>,
 
-        private dataSource: DataSource,
-    ) {}
+    private dataSource: DataSource,
 
-    async findAll() {
-        return this.orderRepo.find({
-            relations: ['user', 'items', 'items.product'],
-        });
+    private notificationGateway: NotificationGateway,
+  ) {}
+
+  async findAll() {
+    return this.orderRepo.find({
+      relations: ['user', 'items', 'items.product'],
+    });
+  }
+
+  async findMyOrders(userId: string) {
+    return this.orderRepo.find({
+      where: { user: { id: userId } },
+      relations: ['user', 'items', 'items.product'],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async findOne(id: number) {
+    const order = await this.orderRepo.findOne({
+      where: { id },
+      relations: [
+        'user',
+        'items',
+        'items.product',
+        'tracking',
+        'tracking.driverProfile',
+        'tracking.driverProfile.user',
+        'payments',
+      ],
+    });
+
+    // console.log("BACKEND ORDER:", JSON.stringify(order, null, 2)); // 👈 ADD THIS
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
     }
 
-    async findMyOrders(userId: string) {
-        return this.orderRepo.find({
-            where: { user: { id: userId } },
-            relations: ['user', 'items', 'items.product'],
-            order: { created_at: 'DESC' },
-        });
+    return order;
+  }
+
+  async adminFindAll(query: QueryOrderDto) {
+    const qb = this.orderRepo
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.user', 'user')
+      .leftJoinAndSelect('order.items', 'items')
+      .leftJoinAndSelect('items.product', 'product')
+      .leftJoinAndSelect('order.tracking', 'tracking')
+      .orderBy('order.created_at', 'DESC');
+
+    if (query.status) {
+      qb.andWhere('order.status = :status', {
+        status: query.status,
+      });
     }
 
-    async findOne(id: number) {
-        const order = await this.orderRepo.findOne({
-            where: { id },
-            relations: ['user', 'items', 'items.product', 'tracking'],
-        });
-
-        if (!order) throw new NotFoundException('Order not found');
-
-        return order;
+    if (query.search) {
+      qb.andWhere(
+        '(CAST(order.id AS TEXT) ILIKE :search OR user.email ILIKE :search)',
+        { search: `%${query.search}%` },
+      );
     }
 
+    return qb.getMany();
+  }
 
-    async adminFindAll(query: QueryOrderDto) {
-        const qb = this.orderRepo
-            .createQueryBuilder('order')
-            .leftJoinAndSelect('order.user', 'user')
-            .leftJoinAndSelect('order.items', 'items')
-            .leftJoinAndSelect('items.product', 'product')
-            .leftJoinAndSelect('order.tracking', 'tracking')
-            .orderBy('order.created_at', 'DESC');
+  async updateStatus(orderId: number, dto: UpdateOrderStatusDto) {
+    return this.dataSource.transaction(async (manager) => {
+      const order = await manager.findOne(Order, {
+        where: { id: orderId },
+        relations: ['tracking', 'items'],
+      });
 
-        if (query.status) {
-            qb.andWhere('order.status = :status', {
-                status: query.status,
-            });
-        }
+      if (!order) throw new NotFoundException('Order not found');
 
-        if (query.search) {
-            qb.andWhere(
-                '(CAST(order.id AS TEXT) ILIKE :search OR user.email ILIKE :search)',
-                { search: `%${query.search}%` },
-            );
-        }
+      if (order.status === OrderStatus.COMPLETED)
+        throw new BadRequestException('Order already completed');
 
-        return qb.getMany();
+      if (order.status === OrderStatus.CANCELLED)
+        throw new BadRequestException('Order already cancelled');
+
+      order.status = dto.status;
+
+      // sync tracking
+      if (order.tracking) {
+        const map = {
+          [OrderStatus.PENDING]: DeliveryStatus.PREPARING,
+          [OrderStatus.PAID]: DeliveryStatus.PREPARING,
+          [OrderStatus.SHIPPED]: DeliveryStatus.PICKED_UP,
+          [OrderStatus.COMPLETED]: DeliveryStatus.DELIVERED,
+          [OrderStatus.CANCELLED]: DeliveryStatus.CANCELLED,
+        };
+
+        order.tracking.status = map[dto.status];
+
+        await manager.save(DeliveryTracking, order.tracking);
+      }
+
+      return manager.save(Order, order);
+    });
+  }
+
+  async cancelOrder(orderId: number, dto: CancelOrderDto) {
+    const order = await this.findOne(orderId);
+
+    if (
+      order.status === OrderStatus.SHIPPED ||
+      order.status === OrderStatus.COMPLETED
+    ) {
+      throw new BadRequestException('Cannot cancel shipped/completed order');
     }
 
-    async updateStatus(orderId: number, dto: UpdateOrderStatusDto) {
-        return this.dataSource.transaction(async (manager) => {
+    order.status = OrderStatus.CANCELLED;
 
-            const order = await manager.findOne(Order, {
-                where: { id: orderId },
-                relations: ['tracking', 'items'],
-            });
+    return this.orderRepo.save(order);
+  }
 
-            if (!order) throw new NotFoundException('Order not found');
+  async updateOrderItem(
+    orderId: number,
+    itemId: number,
+    dto: UpdateOrderItemDto,
+  ) {
+    return this.dataSource.transaction(async (manager) => {
+      const order = await manager.findOne(Order, {
+        where: { id: orderId },
+        relations: ['items'],
+      });
 
-            if (order.status === OrderStatus.COMPLETED)
-                throw new BadRequestException('Order already completed');
+      if (!order) throw new NotFoundException('Order not found');
 
-            if (order.status === OrderStatus.CANCELLED)
-                throw new BadRequestException('Order already cancelled');
+      const item = order.items.find((i) => i.id === itemId);
 
-            order.status = dto.status;
+      if (!item) throw new BadRequestException('Order item not found');
 
-            // sync tracking
-            if (order.tracking) {
-                const map = {
-                    [OrderStatus.PENDING]: DeliveryStatus.PREPARING,
-                    [OrderStatus.PAID]: DeliveryStatus.PREPARING,
-                    [OrderStatus.SHIPPED]: DeliveryStatus.PICKED_UP,
-                    [OrderStatus.COMPLETED]: DeliveryStatus.DELIVERED,
-                    [OrderStatus.CANCELLED]: DeliveryStatus.CANCELLED,
-                };
+      item.status = dto.status;
 
-                order.tracking.status = map[dto.status];
+      await manager.save(OrderItem, item);
 
-                await manager.save(DeliveryTracking, order.tracking);
-            }
+      const items = order.items;
 
-            return manager.save(Order, order);
-        });
-    }
+      const allFulfilled = items.every((i) => i.status === 'fulfilled');
+      const allCancelled = items.every((i) => i.status === 'cancelled');
 
-    async cancelOrder(orderId: number, dto: CancelOrderDto) {
-        const order = await this.findOne(orderId);
+      if (allFulfilled) {
+        order.status = OrderStatus.COMPLETED;
+      }
 
-        if (
-            order.status === OrderStatus.SHIPPED ||
-            order.status === OrderStatus.COMPLETED
-        ) {
-            throw new BadRequestException(
-                'Cannot cancel shipped/completed order',
-            );
-        }
-
+      if (allCancelled) {
         order.status = OrderStatus.CANCELLED;
+      }
 
-        return this.orderRepo.save(order);
-    }
+      await manager.save(Order, order);
 
-    async updateOrderItem(orderId: number, itemId: number, dto: UpdateOrderItemDto) {
-        return this.dataSource.transaction(async (manager) => {
+      if (order.tracking) {
+        if (allFulfilled) {
+          order.tracking.status = DeliveryStatus.DELIVERED;
+        }
 
-            const order = await manager.findOne(Order, {
-                where: { id: orderId },
-                relations: ['items'],
-            });
+        if (allCancelled) {
+          order.tracking.status = DeliveryStatus.CANCELLED;
+        }
 
-            if (!order) throw new NotFoundException('Order not found');
+        await manager.save(DeliveryTracking, order.tracking);
+      }
 
-            const item = order.items.find(i => i.id === itemId);
+      return item;
+    });
+  }
 
-            if (!item) throw new BadRequestException('Order item not found');
+  async clientCancelOrder(orderId: number, userId: string) {
+    const order = await this.dataSource.transaction(async (manager) => {
+      const order = await manager.findOne(Order, {
+        where: { id: orderId },
+        relations: [
+          'user',
+          'items',
+          'items.product',
+          'tracking',
+          'tracking.driverProfile',
+          'payments',
+        ],
+      });
 
-            item.status = dto.status;
+      if (!order) throw new NotFoundException('Order not found');
 
-            await manager.save(OrderItem, item);
+      if (order.user.id !== userId) {
+        throw new BadRequestException('Not your order');
+      }
 
-            const items = order.items;
+      if (
+        order.status === OrderStatus.SHIPPED ||
+        order.status === OrderStatus.COMPLETED
+      ) {
+        throw new BadRequestException('Cannot cancel this order');
+      }
 
-            const allFulfilled = items.every(i => i.status === 'fulfilled');
-            const allCancelled = items.every(i => i.status === 'cancelled');
+      order.status = OrderStatus.CANCELLED;
+      await manager.save(Order, order);
 
-            if (allFulfilled) {
-                order.status = OrderStatus.COMPLETED;
-            }
+      if (order.tracking) {
+        order.tracking.status = DeliveryStatus.CANCELLED;
+        order.tracking.result = DeliveryResult.CANCELLED;
+        await manager.save(DeliveryTracking, order.tracking);
+      }
 
-            if (allCancelled) {
-                order.status = OrderStatus.CANCELLED;
-            }
+      if (order.tracking?.driverProfile) {
+        order.tracking.driverProfile.is_available = true;
+        await manager.save(DriverProfile, order.tracking.driverProfile);
+      }
 
-            await manager.save(Order, order);
+      if (order.payments?.length) {
+        for (const payment of order.payments) {
+          payment.status = PaymentStatus.FAILED;
+          await manager.save(Payment, payment);
+        }
+      }
 
-            if (order.tracking) {
-                if (allFulfilled) {
-                    order.tracking.status = DeliveryStatus.DELIVERED;
-                }
-
-                if (allCancelled) {
-                    order.tracking.status = DeliveryStatus.CANCELLED;
-                }
-
-                await manager.save(DeliveryTracking, order.tracking);
-            }
-
-            return item;
+      for (const item of order.items) {
+        const product = await manager.findOne(Product, {
+          where: { id: item.product.id },
         });
-    }
+
+        if (product) {
+          product.stock += item.quantity;
+          await manager.save(Product, product);
+        }
+      }
+
+      return order;
+    });
+
+    this.notificationGateway.sendToUser(order.user.id, 'order_cancelled', {
+      orderId: order.id,
+      message: 'Your order has been cancelled',
+      status: order.status,
+    });
+
+    return {
+      message: 'Order cancelled successfully',
+      orderId: order.id,
+    };
+  }
 }

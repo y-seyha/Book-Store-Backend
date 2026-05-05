@@ -12,6 +12,7 @@ import {
 import { User } from "./user.entity";
 import { OrderItem } from "./order-item.entity";
 import {DeliveryTracking} from "./delivery-tracking.entity";
+import { Payment } from './payment.entity';
 
 export enum OrderStatus {
     PENDING = 'pending',
@@ -23,47 +24,49 @@ export enum OrderStatus {
 
 @Entity('orders')
 export class Order extends BaseEntity {
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @PrimaryGeneratedColumn()
-    id: number;
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
+  user: User;
 
-    @ManyToOne(() => User, { onDelete: 'CASCADE' })
-    @JoinColumn({ name: 'user_id' })
-    user: User;
+  @Column('decimal', { precision: 10, scale: 2 })
+  total_price: string;
 
-    @Column('decimal', { precision: 10, scale: 2 })
-    total_price: string;
+  @Column({
+    type: 'enum',
+    enum: OrderStatus,
+    default: OrderStatus.PENDING,
+  })
+  status: OrderStatus;
 
-    @Column({
-        type: 'enum',
-        enum: OrderStatus,
-        default: OrderStatus.PENDING
-    })
-    status: OrderStatus;
+  @Column({ nullable: true })
+  shipping_name: string;
 
-    @Column({ nullable: true })
-    shipping_name: string;
+  @Column({ nullable: true })
+  shipping_phone: string;
 
-    @Column({ nullable: true })
-    shipping_phone: string;
+  @Column({ nullable: true })
+  shipping_address: string;
 
-    @Column({ nullable: true })
-    shipping_address: string;
+  @Column({ nullable: true })
+  shipping_city: string;
 
-    @Column({ nullable: true })
-    shipping_city: string;
+  @OneToMany(() => OrderItem, (item) => item.order)
+  items: OrderItem[];
 
-    @OneToMany(() => OrderItem, item => item.order)
-    items: OrderItem[];
+  @CreateDateColumn()
+  created_at: Date;
 
-    @CreateDateColumn()
-    created_at: Date;
+  @UpdateDateColumn()
+  updated_at: Date;
 
-    @UpdateDateColumn()
-    updated_at: Date;
+  @OneToOne(() => DeliveryTracking, (tracking) => tracking.order, {
+    cascade: true,
+  })
+  tracking: DeliveryTracking;
 
-    @OneToOne(() => DeliveryTracking, tracking => tracking.order, {
-        cascade: true,
-    })
-    tracking: DeliveryTracking;
+  @OneToMany(() => Payment, (payment) => payment.order)
+  payments: Payment[];
 }

@@ -6,13 +6,15 @@ import {Order} from "../common/entities/order.entity";
 import {OrderItem} from "../common/entities/order-item.entity";
 import {Product} from "../common/entities/product.entity";
 import {DeliveryTracking} from "../common/entities/delivery-tracking.entity";
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
-  imports : [
-      TypeOrmModule.forFeature([Order, OrderItem, Product, DeliveryTracking])
+  imports: [
+    TypeOrmModule.forFeature([Order, OrderItem, Product, DeliveryTracking]),
+    NotificationModule,
   ],
   providers: [OrderService],
   controllers: [OrderController],
-    exports: [OrderService]
+  exports: [OrderService],
 })
 export class OrderModule {}

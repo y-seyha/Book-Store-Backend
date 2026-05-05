@@ -23,30 +23,29 @@ export enum PaymentMethod {
 
 @Entity('payments')
 export class Payment extends BaseEntity {
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @PrimaryGeneratedColumn()
-    id: number;
+  @ManyToOne(() => Order, (order) => order.payments, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'order_id' })
+  order: Order;
 
-    @ManyToOne(() => Order, { onDelete: 'CASCADE' })
-    @JoinColumn({ name: 'order_id' })
-    order: Order;
+  @Column('decimal', { precision: 10, scale: 2 })
+  amount: string;
 
-    @Column('decimal', { precision: 10, scale: 2 })
-    amount: string;
+  @Column({
+    type: 'enum',
+    enum: PaymentMethod,
+  })
+  method: PaymentMethod;
 
-    @Column({
-        type: 'enum',
-        enum: PaymentMethod
-    })
-    method: PaymentMethod;
+  @Column({
+    type: 'enum',
+    enum: PaymentStatus,
+    default: PaymentStatus.PENDING,
+  })
+  status: PaymentStatus;
 
-    @Column({
-        type: 'enum',
-        enum: PaymentStatus,
-        default: PaymentStatus.PENDING
-    })
-    status: PaymentStatus;
-
-    @Column({ type: 'timestamp', nullable: true })
-    paid_at: Date;
+  @Column({ type: 'timestamp', nullable: true })
+  paid_at: Date;
 }

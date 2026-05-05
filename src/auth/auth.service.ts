@@ -71,7 +71,7 @@ export class AuthService {
     // }
 
 
-    async register(registerDto: RegisterDTO) {
+    async register(registerDto: RegisterDTO, res : Response) {
         const { email, password, firstName, lastName } = registerDto;
 
         const existing = await this.userRepo.findOne({ where: { email } });
@@ -83,22 +83,37 @@ export class AuthService {
             email,
             first_name: firstName ?? null,
             last_name: lastName ?? null,
-            role: 'customer', // default role
-            is_verified: true, // automatically verified
+            role: 'customer',
+            is_verified: true,
         });
 
         await this.userRepo.save(user);
 
         const account = this.accountRepo.create({
-            user,
-            provider: 'credentials',
-            provider_account_id: email,
-            password_hash: passwordHash,
+          user,
+          provider: 'credentials',
+          provider_account_id: email,
+          password_hash: passwordHash,
         });
 
         await this.accountRepo.save(account);
 
-        return {
+        const payload = { userId: user.id, role: user.role };
+        const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+        const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+
+        res.cookie('access_token', accessToken, {
+          ...getCookieOptions(),
+          maxAge: 15 * 60 * 1000,
+        });
+
+        res.cookie('refresh_token', refreshToken, {
+          ...getCookieOptions(),
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+
+      return {
             message: 'Registration successful',
             user: {
                 id: user.id,
