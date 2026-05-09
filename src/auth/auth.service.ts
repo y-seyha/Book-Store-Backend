@@ -85,6 +85,7 @@ export class AuthService {
 
     return {
       message: 'Registration successful. Please verify your email.',
+      user,
     };
   }
 
