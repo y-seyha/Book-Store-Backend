@@ -6,6 +6,5 @@ export const getCookieOptions = () => {
       secure: isProd,
       sameSite: isProd ? ('none' as const) : ('lax' as const),
       path: '/',
-      domain: '.onrender.com',
     };
 };

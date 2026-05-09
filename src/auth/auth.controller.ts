@@ -1,17 +1,25 @@
-import {Controller, Post, Body, Get, Req, Res, UseGuards, BadRequestException} from '@nestjs/common';
-import {ApiTags, ApiBody, ApiBearerAuth, ApiOperation} from '@nestjs/swagger';
+/* eslint-disable */
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Req,
+  Res,
+  UseGuards,
+  BadRequestException,
+} from '@nestjs/common';
+import { ApiTags, ApiBody, ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDTO } from './dto/register.dto';
-import { VerifyEmailDTO } from './dto/verify-email.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgotPassword.dto';
 import { ResetpasswordDto } from './dto/resetpassword.dto';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
 import type { Request, Response } from 'express';
-import {LoginThrottlerGuard} from "./guard/login-throttler.guard";
-import type {AuthRequest} from "./interface/auth-request.interface";
-import {AuthGuard} from "@nestjs/passport";
-import {getCookieOptions} from "../utils/cookie.util";
+import { LoginThrottlerGuard } from './guard/login-throttler.guard';
+import { AuthGuard } from '@nestjs/passport';
+import { getCookieOptions } from '../utils/cookie.util';
 
 @ApiTags('Auth') // grouping in Swagger UI
 @Controller('auth')
@@ -62,10 +70,23 @@ export class AuthController {
     return this.authService.register(dto, res);
   }
 
-  @Post('verify-email')
-  @ApiBody({ type: VerifyEmailDTO })
-  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDTO) {
-    return this.authService.verifyEmail(verifyEmailDto);
+  @Get('verify-email')
+  async verifyEmail(@Req() req: Request, @Res() res: Response) {
+    const token = req.query.token as string;
+
+    const result = await this.authService.verifyEmail(token);
+
+    res.cookie('access_token', result.accessToken, {
+      ...getCookieOptions(),
+      maxAge: 15 * 60 * 1000,
+    });
+
+    res.cookie('refresh_token', result.refreshToken, {
+      ...getCookieOptions(),
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.redirect(`${process.env.FRONTEND_URL}/?verified=success`);
   }
 
   @UseGuards(LoginThrottlerGuard)
