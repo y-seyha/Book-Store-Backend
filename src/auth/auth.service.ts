@@ -36,52 +36,64 @@ export class AuthService {
   async register(registerDto: RegisterDTO, res: Response) {
     const { email, password, firstName, lastName } = registerDto;
 
-    const existing = await this.userRepo.findOne({ where: { email } });
-    if (existing) throw new BadRequestException('Email already exists');
-
     const passwordHash = await bcrypt.hash(password, 10);
 
     const verificationToken = crypto.randomBytes(32).toString('hex');
-
     const verificationExpires = new Date(Date.now() + 3600 * 1000);
 
-    const user = this.userRepo.create({
-      email,
-      first_name: firstName ?? null,
-      last_name: lastName ?? null,
-      role: 'customer',
-      is_verified: false,
+    //Check if user already exists
+    let user = await this.userRepo.findOne({ where: { email } });
 
-      email_verification_token: verificationToken,
-      email_verification_expires: verificationExpires,
-    });
+    if (user) {
+      // case 1: already verified → block
+      if (user.is_verified) {
+        throw new BadRequestException('Email already exists');
+      }
+
+      // case 2: NOT verified → allow re-registration
+      user.first_name = firstName ?? user.first_name;
+      user.last_name = lastName ?? user.last_name;
+
+      user.email_verification_token = verificationToken;
+      user.email_verification_expires = verificationExpires;
+    } else {
+      // case 3 new user
+      user = this.userRepo.create({
+        email,
+        first_name: firstName ?? null,
+        last_name: lastName ?? null,
+        role: 'customer',
+        is_verified: false,
+        email_verification_token: verificationToken,
+        email_verification_expires: verificationExpires,
+      });
+    }
 
     await this.userRepo.save(user);
 
-    const account = this.accountRepo.create({
-      user,
-      provider: 'credentials',
-      provider_account_id: email,
-      password_hash: passwordHash,
+    let account = await this.accountRepo.findOne({
+      where: {
+        provider: 'credentials',
+        provider_account_id: email,
+      },
     });
+
+    if (!account) {
+      account = this.accountRepo.create({
+        user,
+        provider: 'credentials',
+        provider_account_id: email,
+        password_hash: passwordHash,
+      });
+    } else {
+      //  update password if re-registering
+      account.password_hash = passwordHash;
+    }
 
     await this.accountRepo.save(account);
 
+    //  Send verification email
     await this.mailer.sendVerificationEmail(email, verificationToken);
-
-    // const payload = { userId: user.id, role: user.role };
-    // const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
-    // const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
-    //
-    // res.cookie('access_token', accessToken, {
-    //   ...getCookieOptions(),
-    //   maxAge: 15 * 60 * 1000,
-    // });
-    //
-    // res.cookie('refresh_token', refreshToken, {
-    //   ...getCookieOptions(),
-    //   maxAge: 7 * 24 * 60 * 60 * 1000,
-    // });
 
     return {
       message: 'Registration successful. Please verify your email.',

@@ -86,7 +86,9 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    return res.redirect(`${process.env.FRONTEND_URL}/?verified=success`);
+    return res.redirect(
+      `${process.env.FRONTEND_URL}/auth/verify-success?success=true`,
+    );
   }
 
   @UseGuards(LoginThrottlerGuard)
@@ -112,9 +114,20 @@ export class AuthController {
   }
 
   @Post('refresh-token')
-  @ApiOperation({ summary: 'Refresh access token using refresh token cookie' })
-  async refresh(@Req() req: Request) {
-    return this.authService.refreshToken(req);
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.refreshToken(req);
+
+    res.cookie('access_token', result.accessToken, {
+      ...getCookieOptions(),
+      maxAge: 15 * 60 * 1000,
+    });
+
+    return {
+      success: true,
+    };
   }
 
   @Get('google')
@@ -127,17 +140,9 @@ export class AuthController {
   async googleAuthRedirect(@Req() req: any, @Res() res: Response) {
     const user = req.user;
 
-    res.cookie('access_token', user.accessToken, {
-      ...getCookieOptions(),
-      maxAge: 15 * 60 * 1000,
-    });
-
-    res.cookie('refresh_token', user.refreshToken, {
-      ...getCookieOptions(),
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    return res.redirect(`${process.env.FRONTEND_URL}?login=success`);
+    return res.redirect(
+      `${process.env.FRONTEND_URL}/auth/oauth-success?accessToken=${user.accessToken}&refreshToken=${user.refreshToken}`,
+    );
   }
 
   // Facebook
@@ -150,17 +155,9 @@ export class AuthController {
   async facebookRedirect(@Req() req: any, @Res() res: Response) {
     const user = req.user;
 
-    res.cookie('access_token', user.accessToken, {
-      ...getCookieOptions(),
-      maxAge: 15 * 60 * 1000,
-    });
-
-    res.cookie('refresh_token', user.refreshToken, {
-      ...getCookieOptions(),
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    return res.redirect(`${process.env.FRONTEND_URL}?login=success`);
+    return res.redirect(
+      `${process.env.FRONTEND_URL}/auth/oauth-success?accessToken=${user.accessToken}&refreshToken=${user.refreshToken}`,
+    );
   }
 
   @Get('github')
@@ -172,16 +169,27 @@ export class AuthController {
   async githubRedirect(@Req() req: any, @Res() res: Response) {
     const user = req.user;
 
-    res.cookie('access_token', user.accessToken, {
+    return res.redirect(
+      `${process.env.FRONTEND_URL}/auth/oauth-success?accessToken=${user.accessToken}&refreshToken=${user.refreshToken}`,
+    );
+  }
+
+  @Post('set-cookie')
+  setCookie(@Body() body: any, @Res({ passthrough: true }) res: Response) {
+    const { accessToken, refreshToken } = body;
+
+    res.cookie('access_token', accessToken, {
       ...getCookieOptions(),
       maxAge: 15 * 60 * 1000,
     });
 
-    res.cookie('refresh_token', user.refreshToken, {
+    res.cookie('refresh_token', refreshToken, {
       ...getCookieOptions(),
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    return res.redirect(`${process.env.FRONTEND_URL}?login=success`);
+    return {
+      success: true,
+    };
   }
 }
