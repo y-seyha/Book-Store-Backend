@@ -38,7 +38,7 @@ export class MailerService {
   async sendVerificationEmail(to: string, token: string) {
     const backendUrl = new URL(process.env.BACKEND_URL!);
 
-    const verificationUrl = new URL('/auth/verify-email', backendUrl);
+    const verificationUrl = new URL('/api/auth/verify-email', backendUrl);
 
     verificationUrl.searchParams.set('token', token);
 
