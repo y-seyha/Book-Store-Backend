@@ -11,16 +11,10 @@ services:
     ports:
       - "${PORT}:3000"
 
+    env_file:
+      - .env
+
     environment:
       NODE_ENV: production
 
-      PORT: ${PORT}
-
-      # Neon DB
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
-
-    restart: always
+    restart: unless-stopped
