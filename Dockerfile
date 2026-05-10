@@ -1,27 +1,4 @@
-# Use Node.js 18
-#Dev
-FROM node:20
-
-# Set working directory
-WORKDIR /app
-
-# Copy package files first
-COPY package*.json ./
-
-# Install dependencies
-RUN npm install --include=dev
-
-# Copy the rest of the app
-COPY . .
-
-# Expose port
-EXPOSE 3000
-
-# Run NestJS in dev mode
-CMD ["npm", "run", "start:dev"]
-
-#prod
-FROM node:20
+FROM node:20 AS builder
 
 WORKDIR /app
 
@@ -32,6 +9,25 @@ COPY . .
 
 RUN npm run build
 
+
+#  PRODUCTION STAGE
+
+FROM node:20 AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY package*.json ./
+RUN npm install --omit=dev
+
+
+COPY --from=builder /app/dist ./dist
+
 EXPOSE 3000
 
 CMD ["node", "dist/main.js"]
+
+
+## optional: if you use runtime assets
+#COPY --from=builder /app/.env ./.env
