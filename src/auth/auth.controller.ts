@@ -127,6 +127,7 @@ export class AuthController {
 
     return {
       success: true,
+      result,
     };
   }
 
