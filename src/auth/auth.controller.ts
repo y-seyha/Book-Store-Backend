@@ -156,9 +156,10 @@ export class AuthController {
   async facebookRedirect(@Req() req: any, @Res() res: Response) {
     const user = req.user;
 
-    return res.redirect(
-      `${process.env.FRONTEND_URL}/auth/oauth-success?accessToken=${user.accessToken}&refreshToken=${user.refreshToken}`,
-    );
+    res.cookie('access_token', user.accessToken, getCookieOptions());
+    res.cookie('refresh_token', user.refreshToken, getCookieOptions());
+
+    return res.redirect(`${process.env.FRONTEND_URL}/auth/oauth-success`);
   }
 
   @Get('github')
