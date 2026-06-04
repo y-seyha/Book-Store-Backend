@@ -134,14 +134,18 @@ export class ReviewService {
       where: { id },
       relations: ['user', 'product'],
     });
+
     if (!review) throw new NotFoundException('Review not found');
+
     if (review.user.id !== user.id)
       throw new ForbiddenException("Cannot delete others' reviews");
 
-    // const deleted = await this.reviewRepo.remove(reviews);
+    await this.reviewRepo.delete(id);
+
     await this.cacheManager.del(
       `reviews_product_${review.product?.id || 'all'}`,
-    ); // invalidate cache
+    );
+
     return { message: 'Deleted successfully' };
   }
 
