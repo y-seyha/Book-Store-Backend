@@ -46,7 +46,7 @@ describe('ReviewService', () => {
   });
 
   describe('create', () => {
-    it('should create review', async () => {
+    it('should create reviews', async () => {
       const user = { id: 'u1' };
       const product = { id: 1 };
 
@@ -68,7 +68,7 @@ describe('ReviewService', () => {
       productRepo.findOne.mockResolvedValue(null);
 
       await expect(
-          service.create({} as any, { product_id: 1 } as any),
+        service.create({} as any, { product_id: 1 } as any),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -86,18 +86,16 @@ describe('ReviewService', () => {
   it('should fetch from DB and cache result', async () => {
     cacheManager.get.mockResolvedValue(null);
 
-    reviewRepo.findAndCount.mockResolvedValue(
-        [[{ id: 1 } as any], 1] as any
-    );
+    reviewRepo.findAndCount.mockResolvedValue([[{ id: 1 } as any], 1] as any);
 
-    const result = await service.findAll({ page: 1, limit: 10 }) as any;
+    const result = (await service.findAll({ page: 1, limit: 10 })) as any;
 
     expect(reviewRepo.findAndCount).toHaveBeenCalled();
     expect(cacheManager.set).toHaveBeenCalled();
     expect(result.data.length).toBe(1);
   });
 
-  it('should return one review', async () => {
+  it('should return one reviews', async () => {
     const review = { id: 1 } as any;
 
     reviewRepo.findOne.mockResolvedValue(review as any);
@@ -107,14 +105,14 @@ describe('ReviewService', () => {
     expect(result).toEqual(review);
   });
 
-  it('should throw if review not found', async () => {
+  it('should throw if reviews not found', async () => {
     reviewRepo.findOne.mockResolvedValue(null);
 
     await expect(service.findOne(1)).rejects.toThrow(NotFoundException);
   });
 
   describe('update', () => {
-    it('should update review', async () => {
+    it('should update reviews', async () => {
       const user = { id: 'u1' };
       const review = {
         id: 1,
@@ -131,12 +129,12 @@ describe('ReviewService', () => {
       expect(result.rating).toBe(4);
     });
 
-    it('should throw if review not found', async () => {
+    it('should throw if reviews not found', async () => {
       reviewRepo.findOne.mockResolvedValue(null);
 
-      await expect(
-          service.update({ id: 'u1' } as any, 1, {}),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.update({ id: 'u1' } as any, 1, {})).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw if not owner', async () => {
@@ -144,14 +142,14 @@ describe('ReviewService', () => {
         user: { id: 'u2' },
       } as any);
 
-      await expect(
-          service.update({ id: 'u1' } as any, 1, {}),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.update({ id: 'u1' } as any, 1, {})).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
   describe('remove', () => {
-    it('should delete review', async () => {
+    it('should delete reviews', async () => {
       const user = { id: 'u1' };
 
       const review = {
@@ -169,12 +167,12 @@ describe('ReviewService', () => {
       expect(result).toEqual({ message: 'Deleted successfully' });
     });
 
-    it('should throw if review not found', async () => {
+    it('should throw if reviews not found', async () => {
       reviewRepo.findOne.mockResolvedValue(null);
 
-      await expect(
-          service.remove({ id: 'u1' } as any, 1),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.remove({ id: 'u1' } as any, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw if not owner', async () => {
@@ -182,9 +180,9 @@ describe('ReviewService', () => {
         user: { id: 'u2' },
       } as any);
 
-      await expect(
-          service.remove({ id: 'u1' } as any, 1),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.remove({ id: 'u1' } as any, 1)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 });
