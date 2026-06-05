@@ -22,6 +22,7 @@ import { PaymentModule } from './payment/payment.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ProfileModule } from './profile/profile.module';
 import { NotificationModule } from './notification/notification.module';
+import { ChatbotModule } from './chatbot/chatbot.module';
 
 @Module({
   imports: [
@@ -77,6 +78,7 @@ import { NotificationModule } from './notification/notification.module';
     DashboardModule,
     ProfileModule,
     NotificationModule,
+    ChatbotModule,
   ],
   providers: [
     {

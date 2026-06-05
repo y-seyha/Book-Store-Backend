@@ -65,10 +65,13 @@ export class CartService {
     );
 
     // total price (optional but very useful)
-    const totalPrice = activeItems.reduce(
-      (sum, item) => sum + item.quantity * Number(item.product.price),
-      0,
-    );
+    const totalPrice = activeItems.reduce((sum, item) => {
+      const price = item.product?.price;
+
+      if (!price) return sum;
+
+      return sum + item.quantity * Number(price);
+    }, 0);
 
     return {
       ...cart,
