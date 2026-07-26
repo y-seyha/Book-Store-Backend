@@ -155,7 +155,7 @@ export class AuthService {
 
     res.cookie('access_token', accessToken, {
       ...getCookieOptions(),
-      maxAge: 60 * 60 * 1000,
+      maxAge: 15 * 60 * 1000,
     });
 
     res.cookie('refresh_token', refreshToken, {
@@ -176,11 +176,17 @@ export class AuthService {
     if (!token) throw new UnauthorizedException('No refresh token');
     try {
       const payload = this.jwtService.verify(token);
+      const user = await this.userRepo.findOne({ where: { id: payload.userId } });
+      const role = user?.role || payload.role;
       const accessToken = this.jwtService.sign(
-        { userId: payload.userId, role: payload.role },
+        { userId: payload.userId, role },
         { expiresIn: '15m' },
       );
-      return { accessToken };
+      const refreshToken = this.jwtService.sign(
+        { userId: payload.userId, role },
+        { expiresIn: '7d' },
+      );
+      return { accessToken, refreshToken };
     } catch (err) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }

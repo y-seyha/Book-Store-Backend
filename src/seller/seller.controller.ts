@@ -11,6 +11,7 @@ import {
   ParseUUIDPipe,
   ParseIntPipe,
   Query,
+  Res,
 } from '@nestjs/common';
 import { SellerService } from './seller.service';
 import { CreateSellerDto } from './dto/create-seller.dto';
@@ -28,11 +29,17 @@ import {
 import { OrderItemStatus } from '../common/entities/order-item.entity';
 import { CurrentUser } from '../auth/decorator/current-user.decorator';
 import { QueryProductDto } from '../products/dto/query.dto';
+import { JwtService } from '@nestjs/jwt';
+import { getCookieOptions } from '../utils/cookie.util';
+import type { Response } from 'express';
 
 @ApiTags('Sellers')
 @Controller('sellers')
 export class SellerController {
-  constructor(private readonly sellerService: SellerService) {}
+  constructor(
+    private readonly sellerService: SellerService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   /** Become a seller */
   @Post('become')
@@ -47,8 +54,27 @@ export class SellerController {
     status: 400,
     description: 'Invalid input or user already a seller',
   })
-  async becomeSeller(@Request() req, @Body() createSellerDto: CreateSellerDto) {
-    return this.sellerService.becomeSeller(req.user, createSellerDto);
+  async becomeSeller(
+    @Request() req,
+    @Body() createSellerDto: CreateSellerDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.sellerService.becomeSeller(req.user, createSellerDto);
+
+    const payload = { userId: req.user.id, role: 'seller' };
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+
+    res.cookie('access_token', accessToken, {
+      ...getCookieOptions(),
+      maxAge: 15 * 60 * 1000,
+    });
+    res.cookie('refresh_token', refreshToken, {
+      ...getCookieOptions(),
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return result;
   }
 
   @Get('dashboard')

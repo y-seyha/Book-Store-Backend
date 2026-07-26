@@ -111,15 +111,14 @@ export class DashboardService {
     private async getRevenueChart() {
         return this.paymentRepo
             .createQueryBuilder('payment')
-            .select(`DATE(payment.paid_at)`, 'date')
+            .select(`TO_CHAR(payment.paid_at, 'YYYY-MM')`, 'month')
             .addSelect('COALESCE(SUM(payment.amount), 0)', 'revenue')
             .where('payment.status = :status', {
                 status: PaymentStatus.SUCCESS,
             })
             .andWhere('payment.paid_at IS NOT NULL')
-            .andWhere(`payment.paid_at >= NOW() - INTERVAL '7 days'`)
-            .groupBy('date')
-            .orderBy('date', 'ASC')
+            .groupBy('month')
+            .orderBy('month', 'ASC')
             .getRawMany();
     }
 }

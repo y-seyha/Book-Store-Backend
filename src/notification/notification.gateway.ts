@@ -35,7 +35,7 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
         if (!userId) return;
 
         client.join(userId);
-        console.log(`User ${userId} joined room`);
+        // console.log(`User ${userId} joined room`);
     }
 
     sendToUser(userId: string, event: string, data: any) {

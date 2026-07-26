@@ -4,7 +4,7 @@ import { Strategy } from 'passport-jwt';
 
 
 @Injectable()
-export class  JwtStrategy extends  PassportStrategy(Strategy) {
+export class JwtStrategy extends PassportStrategy(Strategy) {
     constructor() {
         super({
             jwtFromRequest: (req) => req?.cookies?.['access_token'],
@@ -16,7 +16,6 @@ export class  JwtStrategy extends  PassportStrategy(Strategy) {
     async validate(payload: any) {
         try{
             return {id : payload.userId, role : payload.role};
-
         }catch (e){
             throw new UnauthorizedException('Invalid token')
         }

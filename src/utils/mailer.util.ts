@@ -58,7 +58,7 @@ export class MailerService {
       { headers: this.headers, timeout: 10000 },
     );
 
-    console.log('📧 Brevo verify email response:', res.data);
+    // console.log('📧 Brevo verify email response:', res.data);
   }
 
   async sendPasswordResetEmail(to: string, token: string) {
@@ -84,7 +84,7 @@ export class MailerService {
       { headers: this.headers, timeout: 10000 },
     );
 
-    console.log('📧 Brevo reset email response:', res.data);
+    // console.log('📧 Brevo reset email response:', res.data);
   }
 
   private wrapEmail(title: string, content: string) {

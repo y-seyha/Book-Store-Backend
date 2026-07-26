@@ -125,6 +125,11 @@ export class AuthController {
       maxAge: 15 * 60 * 1000,
     });
 
+    res.cookie('refresh_token', result.refreshToken, {
+      ...getCookieOptions(),
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     return {
       success: true,
       result,

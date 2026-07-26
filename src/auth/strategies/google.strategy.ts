@@ -17,12 +17,12 @@ export class GoogleStrategy extends PassportStrategy(Strategy , 'google'){
     }
 
     async validate(accessToken : string, refreshToken : string, profile : any, done : VerifyCallback) {
-        console.log('--- Google Profile ---');
-        console.log(profile);  // This contains email, name, id, etc.
-
-        console.log('--- Tokens ---');
-        console.log('Access Token:', accessToken);
-        console.log('Refresh Token:', refreshToken);
+        // console.log('--- Google Profile ---');
+        // console.log(profile);  // This contains email, name, id, etc.
+        //
+        // console.log('--- Tokens ---');
+        // console.log('Access Token:', accessToken);
+        // console.log('Refresh Token:', refreshToken);
         try{
             const user = await  this.authService.validateOAuthLogin(profile, accessToken, refreshToken);
             done(null, user);
