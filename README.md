@@ -1,98 +1,121 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Book Store Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+RESTful API for an online bookstore — handles auth, products, cart, checkout, payments, orders, reviews, delivery tracking, notifications, and role-based dashboards for admin, seller, customer, and driver.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Tech Stack
 
-## Description
+- **Framework:** NestJS
+- **Language:** TypeScript
+- **ORM:** TypeORM
+- **Database:** PostgreSQL
+- **Auth:** JWT (access + refresh tokens in httpOnly cookies)
+- **File Upload:** Cloudinary
+- **Email:** Brevo
+- **WebSocket:** Socket.IO (notifications)
+- **OAuth:** Google, GitHub, Facebook
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Project Structure
 
-## Project setup
-
-```bash
-$ npm install
+```
+src/
+├── auth/                 # JWT, OAuth, guards, decorators
+├── cart/                 # Shopping cart
+├── categories/           # Category CRUD
+├── chatbot/              # FAQ chatbot
+├── checkout/             # Order creation from cart
+├── common/               # Entities, base classes
+├── contact/              # Contact form messages
+├── dashboard/            # Admin dashboard analytics
+├── delivery_driver/      # Driver profile management
+├── delivery_tracking/    # Delivery tracking & assignment
+├── file-upload/          # Cloudinary integration
+├── notification/         # WebSocket notifications
+├── order/                # Order management
+├── payment/              # Payment CRUD & stats
+├── products/             # Product CRUD
+├── profile/              # User profile updates
+├── review/               # Reviews (public + admin)
+├── seller/               # Seller dashboard & products
+├── user/                 # Admin user management
+└── utils/                # Mailer, cookie helpers
 ```
 
-## Compile and run the project
+## API Endpoints
 
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| **Auth** | | |
+| POST | `/api/auth/register` | Register new user |
+| POST | `/api/auth/login` | Login, sets httpOnly cookies |
+| POST | `/api/auth/refresh-token` | Refresh access token |
+| POST | `/api/auth/logout` | Clear auth cookies |
+| GET | `/api/auth/me` | Get current user |
+| POST | `/api/auth/forgot-password` | Send reset email |
+| POST | `/api/auth/reset-password` | Reset password |
+| GET | `/api/auth/google` | Google OAuth |
+| GET | `/api/auth/github` | GitHub OAuth |
+| GET | `/api/auth/facebook` | Facebook OAuth |
+| | | |
+| **Admin Dashboard** | | |
+| GET | `/api/admin/dashboard` | Dashboard KPIs + revenue chart + top products |
+| | | |
+| **Sellers** | | |
+| GET | `/api/sellers/dashboard` | Seller dashboard analytics |
+| GET | `/api/sellers/my-products` | Own products |
+| GET | `/api/sellers/me` | Seller profile |
+| PUT | `/api/sellers/me` | Update seller profile |
+| POST | `/api/sellers/become` | Become a seller |
+| GET | `/api/sellers/orders` | Order items for own products |
+| PUT | `/api/sellers/order-items/:id/status` | Update order item status |
+| | | |
+| **Products** | | |
+| GET | `/api/products` | List (paginated, filterable) |
+| GET | `/api/products/:id` | Get single product |
+| POST | `/api/products` | Create product (seller) |
+| PUT | `/api/products/:id` | Update product (seller) |
+| DELETE | `/api/products/:id` | Delete product (seller) |
+| | | |
+| **Reviews** | | |
+| GET | `/api/reviews` | Public list |
+| GET | `/api/reviews/:id` | Get single review |
+| POST | `/api/reviews` | Create review |
+| PUT | `/api/reviews/:id` | Update own review |
+| DELETE | `/api/reviews/:id` | Delete own review |
+| GET | `/api/reviews/admin/all` | List all reviews (admin) |
+| PUT | `/api/reviews/admin/:id` | Update any review (admin) |
+| DELETE | `/api/reviews/admin/:id` | Delete any review (admin) |
+| | | |
+| **Cart** | | |
+| GET | `/api/cart` | Get cart |
+| POST | `/api/cart/add` | Add item |
+| PUT | `/api/cart/items/:id` | Update item quantity |
+| DELETE | `/api/cart/items/:id` | Remove item |
+| | | |
+| **Orders** | | |
+| GET | `/api/orders` | List user orders |
+| GET | `/api/orders/:id` | Get order detail |
+| PUT | `/api/orders/:id/status` | Update order status |
+| PUT | `/api/orders/:id/assign-driver` | Assign driver |
+| | | |
+| **Payments** | | |
+| GET | `/api/payments/admin` | List all payments (admin) |
+| GET | `/api/payments/admin/stats` | Payment statistics (admin) |
+| PUT | `/api/payments/admin/:id/status` | Update payment status (admin) |
+| | | |
+| **Users (Admin)** | | |
+| GET | `/api/admin/users` | List users |
+| GET | `/api/admin/users/:id` | Get user |
+| POST | `/api/admin/users` | Create user |
+| PATCH | `/api/admin/users/:id` | Update user |
+| DELETE | `/api/admin/users/:id` | Delete user |
+| PATCH | `/api/admin/users/:id/role` | Change user role |
+| | | |
+| **Chatbot** | | |
+| POST | `/api/chatbot/chat` | Chat with AI assistant |
+| GET | `/api/chatbot/history` | Get chat history |
+| | | |
+| **Categories (Admin)** | | |
+| GET | `/api/admin/categories` | List categories |
+| POST | `/api/admin/categories` | Create category |
+| PATCH | `/api/admin/categories/:id` | Update category |
+| DELETE | `/api/admin/categories/:id` | Delete category |
